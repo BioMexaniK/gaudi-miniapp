@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
-    <title></title>
+    <title>GAUDI</title>
   </head>
   <body>
     <main class="panel" aria-live="polite">
-      <header class="profile">
-        <p class="eyebrow" id="app-title"></p>
+      <p class="eyebrow panel-title" id="app-title"></p>
+      <header class="profile" id="profile">
         <div class="profile-row">
           <h1 id="user-name"></h1>
           <span class="role-badge" id="user-role"></span>
         </div>
       </header>
-      <section class="metric" aria-labelledby="metric-label">
+      <section class="metric" id="metric" aria-labelledby="metric-label">
         <strong class="metric-value" id="dialog-count"></strong>
         <p id="metric-label"></p>
       </section>

@@ -10,6 +10,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   min-width: 0;
@@ -40,6 +42,7 @@ button { font: inherit; }
 }
 
 .eyebrow { font-size: 0.875rem; }
+.panel-title { margin-bottom: 0.75rem; }
 
 .profile-row {
   display: flex;

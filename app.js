@@ -54,6 +54,7 @@ const locale = String(languageCode || "").toLowerCase().startsWith("ru") ? "ru" 
 const t = strings[locale];
 document.title = t.app_title;
 const elements = {
+  profile: document.getElementById("profile"), metric: document.getElementById("metric"),
   title: document.getElementById("app-title"), name: document.getElementById("user-name"),
   role: document.getElementById("user-role"), count: document.getElementById("dialog-count"),
   metricLabel: document.getElementById("metric-label"), feedback: document.getElementById("feedback"),
@@ -73,6 +74,8 @@ function applyTheme() {
 }
 
 function renderLoading() {
+  elements.profile.hidden = false;
+  elements.metric.hidden = false;
   elements.title.textContent = t.app_title;
   elements.name.textContent = t.loading;
   elements.role.textContent = "";
@@ -83,6 +86,8 @@ function renderLoading() {
 }
 
 function renderError(key, canRetry) {
+  elements.profile.hidden = true;
+  elements.metric.hidden = true;
   elements.feedback.hidden = false;
   elements.message.textContent = t[key];
   elements.retry.textContent = t.retry;
@@ -90,6 +95,8 @@ function renderError(key, canRetry) {
 }
 
 function renderProfile(profile) {
+  elements.profile.hidden = false;
+  elements.metric.hidden = false;
   elements.title.textContent = t.app_title;
   elements.name.textContent = String(profile.name || "");
   elements.role.textContent = t[profile.role] || t.unknown_role;
