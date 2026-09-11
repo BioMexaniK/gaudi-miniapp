@@ -1,0 +1,91 @@
+:root {
+  --tg-bg: #ffffff;
+  --tg-text: #000000;
+  --tg-hint: #707579;
+  --tg-link: #2678b6;
+  --tg-button: #2678b6;
+  --tg-button-text: #ffffff;
+  --tg-secondary-bg: #f1f1f1;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 0;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+button { font: inherit; }
+
+.panel {
+  width: min(100%, 42rem);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+
+.profile, .metric, .feedback {
+  border-radius: 1rem;
+  background: var(--tg-secondary-bg);
+}
+
+.profile, .feedback { padding: 1.25rem; }
+
+.eyebrow, .metric p, .feedback p {
+  margin: 0;
+  color: var(--tg-hint);
+}
+
+.eyebrow { font-size: 0.875rem; }
+
+.profile-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+}
+
+h1 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.5rem, 7vw, 2rem);
+  line-height: 1.2;
+}
+
+.role-badge {
+  padding: 0.3rem 0.625rem;
+  border-radius: 999px;
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.metric { margin-top: 1rem; padding: 1.5rem 1.25rem; }
+
+.metric-value {
+  display: block;
+  min-height: 1.2em;
+  color: var(--tg-link);
+  font-size: clamp(3.25rem, 20vw, 5rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.metric p { margin-top: 0.75rem; font-size: 1rem; }
+.feedback { margin-top: 1rem; }
+
+.feedback button {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+  cursor: pointer;
+}

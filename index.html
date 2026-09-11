@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <title></title>
+  </head>
+  <body>
+    <main class="panel" aria-live="polite">
+      <header class="profile">
+        <p class="eyebrow" id="app-title"></p>
+        <div class="profile-row">
+          <h1 id="user-name"></h1>
+          <span class="role-badge" id="user-role"></span>
+        </div>
+      </header>
+      <section class="metric" aria-labelledby="metric-label">
+        <strong class="metric-value" id="dialog-count"></strong>
+        <p id="metric-label"></p>
+      </section>
+      <section class="feedback" id="feedback" hidden>
+        <p id="message" role="alert"></p>
+        <button id="retry" type="button" hidden></button>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

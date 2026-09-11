@@ -1,2 +1,7 @@
-# gaudi-miniapp
-GAUDI Mini App — internal Telegram panel for owners and managers (static frontend, GitHub Pages). No secrets, no manager data.
+# GAUDI mini-app
+
+Static Telegram Mini App for the internal GAUDI team panel. It requests the current employee profile from the `admin` Supabase Edge Function.
+
+Open it from [t.me/Gaudi_decor_bot/panel](https://t.me/Gaudi_decor_bot/panel).
+
+Do not add keys, tokens, Telegram IDs, phone numbers, or manager data to this repository.
