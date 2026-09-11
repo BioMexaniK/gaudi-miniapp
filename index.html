@@ -15,15 +15,31 @@
           <h1 id="user-name"></h1>
           <span class="role-badge" id="user-role"></span>
         </div>
+        <div class="today-metric">
+          <strong id="dialog-count"></strong>
+          <span id="metric-label"></span>
+        </div>
       </header>
-      <section class="metric" id="metric" aria-labelledby="metric-label">
-        <strong class="metric-value" id="dialog-count"></strong>
-        <p id="metric-label"></p>
-      </section>
       <section class="feedback" id="feedback" hidden>
         <p id="message" role="alert"></p>
         <button id="retry" type="button" hidden></button>
       </section>
+      <form class="filters" id="filters" hidden>
+        <fieldset>
+          <legend id="period-label"></legend>
+          <div class="chips" id="period-chips"></div>
+        </fieldset>
+        <div class="custom-dates" id="custom-dates" hidden>
+          <label><span id="from-label"></span><input id="date-from" type="date"></label>
+          <label><span id="to-label"></span><input id="date-to" type="date"></label>
+        </div>
+        <p class="filter-error" id="filter-error" role="alert" hidden></p>
+        <div class="select-row">
+          <label><span id="channel-label"></span><select id="channel"></select></label>
+          <label id="manager-wrap" hidden><span id="manager-label"></span><select id="manager"></select></label>
+        </div>
+      </form>
+      <div class="dashboard" id="dashboard" hidden></div>
     </main>
     <script src="app.js"></script>
   </body>
