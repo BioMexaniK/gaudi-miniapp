@@ -1,7 +1,8 @@
 "use strict";
 
 const API = "https://plcjkuhxtodofyjnusjf.supabase.co/functions/v1/admin";
-const SVG_NS = ["http:", "//www.w3.org/2000/svg"].join("");
+// XML namespace for createElementNS. Not a network address — nothing is fetched from it.
+const SVG_NS = "http://www.w3.org/2000/svg";
 const RESPONSE_STATUS = { success: 200, bad_request: 400, unauthorized: 401, forbidden: 403, not_found: 404, rate_limited: 429, internal: 500, upstream_unavailable: 503 };
 
 const strings = {
