@@ -183,10 +183,11 @@ function settingInput(row, disabled) {
   input.name = row.key; input.disabled = disabled;
   if (row.value_type === "boolean") { input.type = "checkbox"; input.checked = row.value === true; }
   else if (row.value_type === "time") { input.type = "time"; input.value = String(row.value ?? ""); }
+  else if (row.value_type === "integer") { input.type = "number"; input.step = "1"; input.min = "0"; input.value = String(row.value ?? ""); }
   else { input.rows = 3; input.value = String(row.value ?? ""); }
   return input;
 }
-function settingValue(input, valueType) { return valueType === "boolean" ? input.checked : input.value; }
+function settingValue(input, valueType) { if (valueType === "boolean") return input.checked; if (valueType === "integer") return Number(input.value); return input.value; }
 function replaceSetting(updated) { const index = settingsRows.findIndex((row) => row.key === updated.key); if (index >= 0) settingsRows[index] = updated; }
 function renderSettings() {
   elements.settingsPanel.replaceChildren();
@@ -220,6 +221,7 @@ function renderSettings() {
   }
 }
 async function loadSettings() {
+  if (currentRole !== "owner") return;
   if (settingsLoaded) return;
   settingsNotice = ""; elements.settingsPanel.replaceChildren(node("p", "hint", t.loading));
   try { const rows = await request("/settings"); settingsRows = Array.isArray(rows) ? rows : []; settingsLoaded = true; renderSettings(); }
@@ -261,7 +263,7 @@ function setupFilters() {
 async function loadProfile() {
   elements.title.textContent = t.app_title; elements.name.textContent = t.loading; elements.role.textContent = ""; elements.count.textContent = "—"; elements.metricLabel.textContent = t.today_dialogs; clearError();
   if (!webApp || !webApp.initData) { elements.profile.hidden = true; renderError("not_telegram", false); return; }
-  try { const profile = await request("/me"); currentRole = String(profile.role || ""); elements.profile.hidden = false; elements.name.textContent = String(profile.name || ""); elements.role.textContent = t[profile.role] || t.unknown_role; elements.count.textContent = fmt(profile.today_dialogs); setupTabs(); setupFilters(); await loadStats(); } catch (error) { elements.profile.hidden = true; renderError(error.key || "internal", error.canRetry !== false); }
+  try { const profile = await request("/me"); currentRole = String(profile.role || ""); elements.profile.hidden = false; elements.name.textContent = String(profile.name || ""); elements.role.textContent = t[profile.role] || t.unknown_role; elements.count.textContent = fmt(profile.today_dialogs); if (currentRole === "owner") setupTabs(); setupFilters(); await loadStats(); } catch (error) { elements.profile.hidden = true; renderError(error.key || "internal", error.canRetry !== false); }
 }
 
 elements.retry.addEventListener("click", () => { if (elements.filters.hidden) loadProfile(); else loadStats(); });
