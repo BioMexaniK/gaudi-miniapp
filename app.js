@@ -8,7 +8,8 @@ const RESPONSE_STATUS = { success: 200, bad_request: 400, unauthorized: 401, for
 const strings = {
   ru: {
     app_title: "Панель GAUDI", loading: "Загружаю…", today_dialogs: "Диалогов сегодня", owner: "Владелец", manager: "Менеджер", unknown_role: "Сотрудник",
-    not_telegram: "Откройте панель из Telegram", unauthorized: "Не удалось подтвердить вход. Откройте панель заново из Telegram.", forbidden: "Нет доступа. Панель только для сотрудников GAUDI.", origin_denied: "Нет доступа. Панель только для сотрудников GAUDI.", not_found: "Раздел не найден.", bad_request: "Неверный период. Проверьте даты.", rate_limited: "Слишком много запросов. Подождите минуту.", upstream_unavailable: "Сервис временно недоступен, попробуйте ещё раз.", internal: "На нашей стороне что-то пошло не так.", retry: "Повторить",
+    not_telegram: "Откройте панель из Telegram", unauthorized: "Не удалось подтвердить вход. Откройте панель заново из Telegram.", forbidden: "Нет доступа. Панель только для сотрудников GAUDI.", origin_denied: "Нет доступа. Панель только для сотрудников GAUDI.", not_found: "Раздел не найден.", bad_request: "Неверный период. Проверьте даты.", unknown_setting: "Настройка не найдена.", rate_limited: "Слишком много запросов. Подождите минуту.", upstream_unavailable: "Сервис временно недоступен, попробуйте ещё раз.", internal: "На нашей стороне что-то пошло не так.", retry: "Повторить",
+    dashboard_tab: "Дашборд", settings_tab: "Настройки", save: "Сохранить", saved: "Сохранено", owner_only: "Доступно только для владельца", scope_auto_reply: "Авто-ответы", scope_schedule: "Расписание",
     period: "Период", days_7: "7 дней", days_30: "30 дней", days_90: "90 дней", custom: "Произвольный", from: "С", to: "По", channel: "Канал", manager_filter: "Менеджер", all: "Все", telegram: "Telegram", whatsapp: "WhatsApp", web: "Web", email: "E-mail", invalid_period: "Неверный период. Проверьте даты.",
     volume: "Диалоги", volume_note: "Сколько людей написали боту и сколько сообщений прошло.", dialogs: "Диалогов", dialogs_hint: "людей, написавших хотя бы одно сообщение", client_messages: "Сообщений от клиентов", bot_messages: "Ответов бота", manager_messages: "Сообщений менеджеров", new_leads: "Новых клиентов", new_leads_hint: "первое обращение за период", volume_chart: "Диалоги по дням и каналам",
     funnel: "Воронка", funnel_note: "Путь клиента от первого сообщения до закрытия. Считается по когорте: клиент учитывается в том дне, когда написал впервые.", leads_total: "Написали", leads_total_hint: "всего клиентов за период", engaged: "Дошли до разговора", engaged_hint: "бот ответил хотя бы раз", with_contact: "Оставили контакт", with_contact_hint: "телефон или почта, пригодные для связи", with_cart: "Дошли до корзины", funnel_closed: "Закрыты менеджером", share_of_all: "от всех написавших", to_previous: "к предыдущей ступени", previous_empty: "предыдущая ступень пуста", funnel_note_bottom: "Ступени не строго вложены: клиент может дойти до корзины, не оставив контакт, — поэтому доля от всех клиентов надёжнее, чем конверсия к предыдущей.", funnel_channels: "По каналам",
@@ -25,7 +26,8 @@ const strings = {
   },
   en: {
     app_title: "GAUDI panel", loading: "Loading…", today_dialogs: "Dialogs today", owner: "Owner", manager: "Manager", unknown_role: "Team member",
-    not_telegram: "Open the panel from Telegram", unauthorized: "We could not confirm your sign-in. Open the panel again from Telegram.", forbidden: "Access denied. This panel is for GAUDI staff only.", origin_denied: "Access denied. This panel is for GAUDI staff only.", not_found: "Section not found.", bad_request: "Invalid period. Check the dates.", rate_limited: "Too many requests. Please wait a minute.", upstream_unavailable: "The service is temporarily unavailable. Please try again.", internal: "Something went wrong on our side.", retry: "Retry",
+    not_telegram: "Open the panel from Telegram", unauthorized: "We could not confirm your sign-in. Open the panel again from Telegram.", forbidden: "Access denied. This panel is for GAUDI staff only.", origin_denied: "Access denied. This panel is for GAUDI staff only.", not_found: "Section not found.", bad_request: "Invalid period. Check the dates.", unknown_setting: "Setting was not found.", rate_limited: "Too many requests. Please wait a minute.", upstream_unavailable: "The service is temporarily unavailable. Please try again.", internal: "Something went wrong on our side.", retry: "Retry",
+    dashboard_tab: "Dashboard", settings_tab: "Settings", save: "Save", saved: "Saved", owner_only: "Owner only", scope_auto_reply: "Auto-replies", scope_schedule: "Schedule",
     period: "Period", days_7: "7 days", days_30: "30 days", days_90: "90 days", custom: "Custom", from: "From", to: "To", channel: "Channel", manager_filter: "Manager", all: "All", telegram: "Telegram", whatsapp: "WhatsApp", web: "Web", email: "E-mail", invalid_period: "Invalid period. Check the dates.",
     volume: "Dialogs", volume_note: "How many people wrote to the bot and how many messages passed through.", dialogs: "Dialogs", dialogs_hint: "people who sent at least one message", client_messages: "Client messages", bot_messages: "Bot replies", manager_messages: "Manager messages", new_leads: "New clients", new_leads_hint: "first contact during the period", volume_chart: "Dialogs by day and channel",
     funnel: "Funnel", funnel_note: "A client's path from first message to closing. Cohort-based: a client belongs to the day they first wrote.", leads_total: "Wrote to us", leads_total_hint: "all clients during the period", engaged: "Reached a conversation", engaged_hint: "the bot replied at least once", with_contact: "Shared contact", with_contact_hint: "a phone or email usable for contact", with_cart: "Reached a cart", funnel_closed: "Closed by a manager", share_of_all: "of everyone who wrote", to_previous: "of the previous step", previous_empty: "previous step is empty", funnel_note_bottom: "Steps are not strictly nested: a client can reach a cart without sharing contact details, so the share of all clients is more reliable than conversion from the previous step.", funnel_channels: "By channel",
@@ -49,10 +51,14 @@ const t = strings[locale];
 const numberFormat = new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US", { maximumFractionDigits: 2 });
 let currentPreset = 30;
 let statsController = null;
+let currentRole = "";
+let settingsLoaded = false;
+let settingsRows = [];
+let settingsNotice = "";
 
 const elements = {
   profile: document.getElementById("profile"), title: document.getElementById("app-title"), name: document.getElementById("user-name"), role: document.getElementById("user-role"), count: document.getElementById("dialog-count"), metricLabel: document.getElementById("metric-label"),
-  feedback: document.getElementById("feedback"), message: document.getElementById("message"), retry: document.getElementById("retry"), filters: document.getElementById("filters"), periodLabel: document.getElementById("period-label"), chips: document.getElementById("period-chips"), customDates: document.getElementById("custom-dates"), dateFrom: document.getElementById("date-from"), dateTo: document.getElementById("date-to"), fromLabel: document.getElementById("from-label"), toLabel: document.getElementById("to-label"), filterError: document.getElementById("filter-error"), channelLabel: document.getElementById("channel-label"), channel: document.getElementById("channel"), managerWrap: document.getElementById("manager-wrap"), managerLabel: document.getElementById("manager-label"), manager: document.getElementById("manager"), dashboard: document.getElementById("dashboard")
+  feedback: document.getElementById("feedback"), message: document.getElementById("message"), retry: document.getElementById("retry"), filters: document.getElementById("filters"), periodLabel: document.getElementById("period-label"), chips: document.getElementById("period-chips"), customDates: document.getElementById("custom-dates"), dateFrom: document.getElementById("date-from"), dateTo: document.getElementById("date-to"), fromLabel: document.getElementById("from-label"), toLabel: document.getElementById("to-label"), filterError: document.getElementById("filter-error"), channelLabel: document.getElementById("channel-label"), channel: document.getElementById("channel"), managerWrap: document.getElementById("manager-wrap"), managerLabel: document.getElementById("manager-label"), manager: document.getElementById("manager"), dashboard: document.getElementById("dashboard"), tabs: document.getElementById("tabs"), dashboardTab: document.getElementById("dashboard-tab"), settingsTab: document.getElementById("settings-tab"), settingsPanel: document.getElementById("settings-panel")
 };
 
 function text(key, replacements = {}) { return Object.entries(replacements).reduce((value, [name, replacement]) => value.replace(`{${name}}`, String(replacement)), t[key]); }
@@ -165,9 +171,70 @@ function applyTheme() { const theme = (webApp && webApp.themeParams) || {}; cons
 function renderError(key, canRetry) { elements.feedback.hidden = false; elements.message.textContent = t[key] || t.internal; elements.retry.textContent = t.retry; elements.retry.hidden = !canRetry; elements.dashboard.hidden = true; }
 function clearError() { elements.feedback.hidden = true; elements.retry.hidden = true; }
 
-async function request(path) {
-  const response = await fetch(API + path, { headers: { "X-Tg-Init-Data": webApp.initData }, signal: path.startsWith("/stats") && statsController ? statsController.signal : undefined }); const body = await response.json().catch(() => ({}));
+async function request(path, options = {}) {
+  const headers = { "X-Tg-Init-Data": webApp.initData, ...(options.headers || {}) };
+  const response = await fetch(API + path, { ...options, headers, signal: path.startsWith("/stats") && statsController ? statsController.signal : options.signal }); const body = await response.json().catch(() => ({}));
   if (response.status === RESPONSE_STATUS.success) return body; const error = String(body.error || "internal"); const known = Object.prototype.hasOwnProperty.call(t, error) ? error : "internal"; const canRetry = response.status >= RESPONSE_STATUS.internal || response.status === RESPONSE_STATUS.rate_limited; const failure = new Error(known); failure.key = known; failure.canRetry = canRetry; throw failure;
+}
+
+function scopeLabel(scope) { const key = `scope_${scope}`; return t[key] || scope; }
+function settingInput(row, disabled) {
+  const input = document.createElement(row.value_type === "string" ? "textarea" : "input");
+  input.name = row.key; input.disabled = disabled;
+  if (row.value_type === "boolean") { input.type = "checkbox"; input.checked = row.value === true; }
+  else if (row.value_type === "time") { input.type = "time"; input.value = String(row.value ?? ""); }
+  else { input.rows = 3; input.value = String(row.value ?? ""); }
+  return input;
+}
+function settingValue(input, valueType) { return valueType === "boolean" ? input.checked : input.value; }
+function replaceSetting(updated) { const index = settingsRows.findIndex((row) => row.key === updated.key); if (index >= 0) settingsRows[index] = updated; }
+function renderSettings() {
+  elements.settingsPanel.replaceChildren();
+  if (settingsNotice) elements.settingsPanel.append(node("p", "filter-error", settingsNotice));
+  const groups = new Map(); settingsRows.forEach((row) => { const scope = String(row.scope ?? ""); if (!groups.has(scope)) groups.set(scope, []); groups.get(scope).push(row); });
+  for (const [scope, rows] of groups) {
+    const section = block(scopeLabel(scope)); const fields = [];
+    if (currentRole !== "owner") section.append(node("p", "footnote", t.owner_only));
+    rows.forEach((row) => {
+      const field = node("label", "setting-field"); const input = settingInput(row, currentRole !== "owner");
+      field.append(node("span", "setting-title", String(row.title ?? row.key)));
+      if (row.description) field.append(node("span", "hint", String(row.description)));
+      field.append(input); section.append(field); fields.push([row, input]);
+    });
+    if (currentRole === "owner") {
+      const button = node("button", "save-settings", t.save); button.type = "button";
+      button.addEventListener("click", async () => {
+        button.disabled = true; settingsNotice = "";
+        try {
+          for (const [row, input] of fields) {
+            const updated = await request("/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: row.key, value: settingValue(input, row.value_type) }) });
+            replaceSetting(updated);
+          }
+          settingsNotice = t.saved;
+        } catch (error) { settingsNotice = t[error.key] || t.internal; }
+        renderSettings();
+      });
+      section.append(button);
+    }
+    elements.settingsPanel.append(section);
+  }
+}
+async function loadSettings() {
+  if (settingsLoaded) return;
+  settingsNotice = ""; elements.settingsPanel.replaceChildren(node("p", "hint", t.loading));
+  try { const rows = await request("/settings"); settingsRows = Array.isArray(rows) ? rows : []; settingsLoaded = true; renderSettings(); }
+  catch (error) { settingsNotice = t[error.key] || t.internal; renderSettings(); }
+}
+function selectTab(tab) {
+  const settings = tab === "settings";
+  elements.dashboardTab.setAttribute("aria-pressed", String(!settings)); elements.settingsTab.setAttribute("aria-pressed", String(settings));
+  elements.filters.hidden = settings; elements.dashboard.hidden = settings; elements.settingsPanel.hidden = !settings;
+  clearError();
+  if (settings) loadSettings();
+}
+function setupTabs() {
+  elements.dashboardTab.textContent = t.dashboard_tab; elements.settingsTab.textContent = t.settings_tab; elements.tabs.hidden = false;
+  elements.dashboardTab.addEventListener("click", () => selectTab("dashboard")); elements.settingsTab.addEventListener("click", () => selectTab("settings"));
 }
 
 function moscowToday() { const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()); const values = Object.fromEntries(parts.map((part) => [part.type, part.value])); return `${values.year}-${values.month}-${values.day}`; }
@@ -194,7 +261,7 @@ function setupFilters() {
 async function loadProfile() {
   elements.title.textContent = t.app_title; elements.name.textContent = t.loading; elements.role.textContent = ""; elements.count.textContent = "—"; elements.metricLabel.textContent = t.today_dialogs; clearError();
   if (!webApp || !webApp.initData) { elements.profile.hidden = true; renderError("not_telegram", false); return; }
-  try { const profile = await request("/me"); elements.profile.hidden = false; elements.name.textContent = String(profile.name || ""); elements.role.textContent = t[profile.role] || t.unknown_role; elements.count.textContent = fmt(profile.today_dialogs); setupFilters(); await loadStats(); } catch (error) { elements.profile.hidden = true; renderError(error.key || "internal", error.canRetry !== false); }
+  try { const profile = await request("/me"); currentRole = String(profile.role || ""); elements.profile.hidden = false; elements.name.textContent = String(profile.name || ""); elements.role.textContent = t[profile.role] || t.unknown_role; elements.count.textContent = fmt(profile.today_dialogs); setupTabs(); setupFilters(); await loadStats(); } catch (error) { elements.profile.hidden = true; renderError(error.key || "internal", error.canRetry !== false); }
 }
 
 elements.retry.addEventListener("click", () => { if (elements.filters.hidden) loadProfile(); else loadStats(); });
