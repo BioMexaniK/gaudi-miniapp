@@ -12,7 +12,7 @@
 [hidden] { display: none !important; }
 html, body { max-width: 100%; overflow-x: hidden; }
 body { margin: 0; min-width: 0; background: var(--tg-bg); color: var(--tg-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-button, input, select { max-width: 100%; color: inherit; font: inherit; }
+button, input, select, textarea { max-width: 100%; color: inherit; font: inherit; }
 .panel { width: min(100%, 46rem); min-width: 0; min-height: 100vh; margin: 0 auto; padding: max(1rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left)); }
 .profile, .feedback, .dashboard-block { border-radius: 1rem; background: var(--tg-secondary-bg); padding: 1rem; }
 .eyebrow, .feedback p, .hint, .coverage, .footnote, .empty, .metric-label { color: var(--tg-hint); }
@@ -26,6 +26,7 @@ h1 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: clamp(1.4rem, 
 .today-metric strong { color: var(--tg-link); font-size: 1.5rem; }
 .today-metric span { color: var(--tg-hint); font-size: 0.9rem; }
 .feedback { margin-top: 1rem; }
+.tabs { display: flex; gap: 0.35rem; margin-top: 0.75rem; }
 .feedback button, .chip, .show-all { border: 0; border-radius: 0.65rem; cursor: pointer; }
 .feedback button, .show-all { margin-top: 0.75rem; padding: 0.6rem 0.85rem; background: var(--tg-button); color: var(--tg-button-text); }
 .filters { position: sticky; z-index: 5; top: 0; margin: 0.75rem -0.25rem 0; padding: 0.75rem 0.25rem; background: var(--tg-bg); }
@@ -38,6 +39,13 @@ h1 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: clamp(1.4rem, 
 .filters input, .filters select { width: 100%; min-width: 0; padding: 0.5rem; border: 1px solid var(--tg-hint); border-radius: 0.55rem; background: var(--tg-bg); }
 .filter-error { margin: 0.45rem 0 0; color: var(--tg-link); font-size: 0.85rem; }
 .dashboard { display: grid; gap: 0.75rem; }
+.settings-panel { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+.setting-field { display: grid; gap: 0.35rem; margin-top: 0.85rem; }
+.setting-title { font-weight: 600; }
+.setting-field input:not([type="checkbox"]), .setting-field textarea { width: 100%; padding: 0.5rem; border: 1px solid var(--tg-hint); border-radius: 0.55rem; background: var(--tg-bg); }
+.setting-field textarea { resize: vertical; }
+.save-settings { margin-top: 1rem; padding: 0.6rem 0.85rem; border: 0; border-radius: 0.65rem; background: var(--tg-button); color: var(--tg-button-text); cursor: pointer; }
+.save-settings:disabled { opacity: 0.6; cursor: wait; }
 .dashboard-block { min-width: 0; overflow: hidden; }
 .dashboard-block h2 { margin: 0 0 0.85rem; font-size: 1.15rem; }
 .dashboard-block h3 { margin: 1rem 0 0.5rem; font-size: 0.95rem; }

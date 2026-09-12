@@ -21,6 +21,10 @@
           <span id="metric-label"></span>
         </div>
       </header>
+      <nav class="tabs" id="tabs" aria-label="Sections" hidden>
+        <button class="chip" id="dashboard-tab" type="button" aria-pressed="true"></button>
+        <button class="chip" id="settings-tab" type="button" aria-pressed="false"></button>
+      </nav>
       <section class="feedback" id="feedback" hidden>
         <p id="message" role="alert"></p>
         <button id="retry" type="button" hidden></button>
@@ -41,6 +45,7 @@
         </div>
       </form>
       <div class="dashboard" id="dashboard" hidden></div>
+      <section class="settings-panel" id="settings-panel" hidden></section>
     </main>
     <script src="app.js?v=2026-09-12b"></script>
   </body>
