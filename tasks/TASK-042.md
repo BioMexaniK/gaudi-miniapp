@@ -50,3 +50,15 @@ the time/text inputs.
   the dashboard, unchanged from before the Settings tab existed.
 
 Append your report under an "## Отчёт исполнителя" heading when done.
+
+## Отчёт исполнителя
+
+Изменён `app.js`:
+- Для `value_type: "integer"` создаётся `input[type="number"]` с `step="1"`, `min="0"` и текущим значением; при сохранении передаётся `Number(input.value)`.
+- Настройка вкладок доступна только владельцу; `loadSettings()` дополнительно защищён от вызова не-владельцем, поэтому `GET /settings` для него не выполняется.
+
+Проверки выполнены:
+- `node --check app.js` — успешно.
+- Изолированный Node-сценарий проверил integer input и числовое значение в payload; для роли `manager` подтвердил отсутствие вызовов `setupTabs()` и `/settings`, сохранение исходных `hidden` для tabs/settings panel и загрузку дашборда.
+- Селектор `.setting-field input:not([type="checkbox"])` покрывает `input[type="number"]`; CSS не менялся.
+- `git diff --check` — успешно.
