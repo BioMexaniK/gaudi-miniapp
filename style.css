@@ -43,6 +43,7 @@ h1 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: clamp(1.4rem, 
 .setting-field { display: grid; gap: 0.35rem; margin-top: 0.85rem; }
 .setting-title { font-weight: 600; }
 .setting-field input:not([type="checkbox"]), .setting-field textarea { width: 100%; padding: 0.5rem; border: 1px solid var(--tg-hint); border-radius: 0.55rem; background: var(--tg-bg); }
+.setting-field input[type="checkbox"] { justify-self: start; width: 1.6rem; height: 1.6rem; accent-color: var(--tg-button); cursor: pointer; }
 .setting-field textarea { resize: vertical; }
 .save-settings { margin-top: 1rem; padding: 0.6rem 0.85rem; border: 0; border-radius: 0.65rem; background: var(--tg-button); color: var(--tg-button-text); cursor: pointer; }
 .save-settings:disabled { opacity: 0.6; cursor: wait; }
