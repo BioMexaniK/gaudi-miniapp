@@ -43,6 +43,7 @@ h1 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: clamp(1.4rem, 
 .dashboard-block h3 { margin: 1rem 0 0.5rem; font-size: 0.95rem; }
 .metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
 .stat { min-width: 0; padding: 0.65rem; border-radius: 0.7rem; background: var(--tg-bg); }
+.stat--wide { grid-column: 1 / -1; }
 .stat-value { display: block; overflow-wrap: anywhere; color: var(--tg-link); font-size: 1.35rem; line-height: 1.1; }
 .stat .metric-label { display: block; margin-top: 0.25rem; font-size: 0.78rem; overflow-wrap: anywhere; }
 .stat .hint { display: block; margin-top: 0.25rem; font-size: 0.72rem; overflow-wrap: anywhere; }
