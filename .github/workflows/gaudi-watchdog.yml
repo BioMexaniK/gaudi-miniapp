@@ -68,6 +68,7 @@ jobs:
         env:
           TG: ${{ secrets.GAUDI_TG_BOT_TOKEN }}
           NOW: ${{ steps.check.outputs.now }}
+          PREV: ${{ steps.check.outputs.prev }}
           FAILING: ${{ steps.check.outputs.failing }}
           PROBLEM: ${{ steps.check.outputs.problem }}
         run: |
@@ -79,8 +80,16 @@ jobs:
             text="🟢 Сторож: Supabase снова отвечает."
             name="🟢 Состояние ИИ-Агента"; [ "$FAILING" != 0 ] && name="🔴 Состояние ИИ-Агента"
           fi
-          curl -sS -m 20 "$api/sendMessage" --data-urlencode "chat_id=$CHAT_ID" \
-            --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "text=$text" | jq -e .ok
+          sent=""
+          for i in 1 2 3; do
+            if curl -sS -m 20 "$api/sendMessage" --data-urlencode "chat_id=$CHAT_ID" \
+                 --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "text=$text" | jq -e .ok >/dev/null; then
+              sent=1; break
+            fi
+            sleep 15
+          done
+          # not delivered: keep the old state so the next run tries to alert again
+          if [ -z "$sent" ]; then echo "$PREV" > state/status; echo "alert not delivered"; exit 1; fi
           curl -sS -m 20 "$api/editForumTopic" --data-urlencode "chat_id=$CHAT_ID" \
             --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "name=$name" >/dev/null || true
 
