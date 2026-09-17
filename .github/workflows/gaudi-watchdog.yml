@@ -2,7 +2,7 @@
 # Source of truth: tools/watchdog/gaudi-watchdog.yml in the GAUDI repo; published to
 # BioMexaniK/gaudi-miniapp (public repo -> Actions minutes are free) by tools/watchdog/publish.py.
 # Supabase runs every other check itself; this job only answers "is Supabase itself alive?"
-# (Edge Functions + database + pg_cron) and alerts the managers' topic «🩺 Бот» directly via the
+# (Edge Functions + database + pg_cron) and alerts the managers' topic «🩺 Состояние ИИ-Агента» directly via the
 # Telegram Bot API when that changes. Supabase in turn alerts if this job stops calling it.
 name: GAUDI watchdog
 
@@ -74,10 +74,10 @@ jobs:
           api="https://api.telegram.org/bot$TG"
           if [ "$NOW" = down ]; then
             text=$(printf '🔴 Сторож: Supabase не отвечает — бот (Telegram, WhatsApp), виджет и мониторинг не работают.\n%s' "$PROBLEM")
-            name="🔴 Бот"
+            name="🔴 Состояние ИИ-Агента"
           else
             text="🟢 Сторож: Supabase снова отвечает."
-            name="🟢 Бот"; [ "$FAILING" != 0 ] && name="🔴 Бот"
+            name="🟢 Состояние ИИ-Агента"; [ "$FAILING" != 0 ] && name="🔴 Состояние ИИ-Агента"
           fi
           curl -sS -m 20 "$api/sendMessage" --data-urlencode "chat_id=$CHAT_ID" \
             --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "text=$text" | jq -e .ok
