@@ -1,0 +1,103 @@
+# External watchdog for the GAUDI bot's Supabase project.
+# Source of truth: tools/watchdog/gaudi-watchdog.yml in the GAUDI repo; published to
+# BioMexaniK/gaudi-miniapp (public repo -> Actions minutes are free) by tools/watchdog/publish.py.
+# Supabase runs every other check itself; this job only answers "is Supabase itself alive?"
+# (Edge Functions + database + pg_cron) and alerts the managers' topic «🩺 Бот» directly via the
+# Telegram Bot API when that changes. Supabase in turn alerts if this job stops calling it.
+name: GAUDI watchdog
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: gaudi-watchdog
+  cancel-in-progress: false
+
+env:
+  BASE: https://plcjkuhxtodofyjnusjf.supabase.co/functions/v1
+  CHAT_ID: "-1003914953850"
+  THREAD_ID: "1064"
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Restore last state
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: watchdog-state-${{ github.run_id }}
+          restore-keys: watchdog-state-
+
+      - name: Check Supabase
+        id: check
+        env:
+          KEY: ${{ secrets.GAUDI_WATCHDOG_KEY }}
+        run: |
+          probe() {
+            body=$(curl -sS -m 25 "$BASE/relay/health?k=$KEY" 2>&1 || true)
+            if echo "$body" | jq -e '.ok == true and .cron_alive == true' >/dev/null 2>&1; then
+              echo "$body" > /tmp/health.json; return 0
+            fi
+            echo "relay/health: ${body:0:300}"; return 1
+          }
+          chat() { curl -sS -m 25 -o /dev/null -w '%{http_code}' "$BASE/chat/" || echo 000; }
+          problem=""
+          if ! out=$(probe); then sleep 60; out=$(probe) || problem="$out"; fi
+          if [ -z "$problem" ]; then
+            c=$(chat); if [ "$c" != 200 ]; then sleep 30; c=$(chat); [ "$c" = 200 ] || problem="chat: HTTP $c"; fi
+          fi
+          mkdir -p state
+          prev=$(cat state/status 2>/dev/null || echo ok)
+          now=ok; [ -n "$problem" ] && now=down
+          echo "$now" > state/status
+          failing=$(jq -r '.failing | length' /tmp/health.json 2>/dev/null || echo 0)
+          echo "prev=$prev now=$now failing=$failing problem=$problem"
+          { echo "prev=$prev"; echo "now=$now"; echo "failing=$failing"; } >> "$GITHUB_OUTPUT"
+          { echo "problem<<EOF_P"; echo "$problem"; echo "EOF_P"; } >> "$GITHUB_OUTPUT"
+
+      - name: Alert on change
+        if: steps.check.outputs.prev != steps.check.outputs.now
+        env:
+          TG: ${{ secrets.GAUDI_TG_BOT_TOKEN }}
+          NOW: ${{ steps.check.outputs.now }}
+          FAILING: ${{ steps.check.outputs.failing }}
+          PROBLEM: ${{ steps.check.outputs.problem }}
+        run: |
+          api="https://api.telegram.org/bot$TG"
+          if [ "$NOW" = down ]; then
+            text=$(printf '🔴 Сторож: Supabase не отвечает — бот (Telegram, WhatsApp), виджет и мониторинг не работают.\n%s' "$PROBLEM")
+            name="🔴 Бот"
+          else
+            text="🟢 Сторож: Supabase снова отвечает."
+            name="🟢 Бот"; [ "$FAILING" != 0 ] && name="🔴 Бот"
+          fi
+          curl -sS -m 20 "$api/sendMessage" --data-urlencode "chat_id=$CHAT_ID" \
+            --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "text=$text" >/dev/null
+          curl -sS -m 20 "$api/editForumTopic" --data-urlencode "chat_id=$CHAT_ID" \
+            --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "name=$name" >/dev/null || true
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: watchdog-state-${{ github.run_id }}
+
+      # Scheduled workflows in public repos are disabled after 60 days without repo activity;
+      # re-enabling through the API once a day keeps this one alive.
+      - name: Keepalive
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%H)" = "03" ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/gaudi-watchdog.yml/enable" && echo kept alive
+          fi
