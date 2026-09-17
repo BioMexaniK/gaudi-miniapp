@@ -80,7 +80,7 @@ jobs:
             name="🟢 Бот"; [ "$FAILING" != 0 ] && name="🔴 Бот"
           fi
           curl -sS -m 20 "$api/sendMessage" --data-urlencode "chat_id=$CHAT_ID" \
-            --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "text=$text" >/dev/null
+            --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "text=$text" | jq -e .ok
           curl -sS -m 20 "$api/editForumTopic" --data-urlencode "chat_id=$CHAT_ID" \
             --data-urlencode "message_thread_id=$THREAD_ID" --data-urlencode "name=$name" >/dev/null || true
 
