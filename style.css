@@ -87,7 +87,8 @@ tr.clickable:hover { background: var(--tg-bg); }
 .release-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
 .release-dialog h2 { margin: 0 1.75rem 0.5rem 0; font-size: 1.1rem; }
 .release-dialog h3 { margin: 1rem 0 0.35rem; font-size: 0.85rem; color: var(--tg-hint); }
-.release-dialog p { margin: 0; font-size: 0.88rem; line-height: 1.4; white-space: pre-wrap; }
+.release-dialog p { margin: 0 0 0.75rem; font-size: 0.88rem; line-height: 1.4; white-space: pre-wrap; }
+.release-dialog p:last-child { margin-bottom: 0; }
 .dialog-close { position: absolute; top: 0.65rem; right: 0.65rem; width: 2rem; height: 2rem; border: 0; border-radius: 999px; background: var(--tg-secondary-bg); color: var(--tg-text); font-size: 1.2rem; line-height: 1; cursor: pointer; }
 @media (min-width: 34rem) { .panel { padding-right: 1rem; padding-left: 1rem; } .metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 22rem) { .custom-dates, .select-row { grid-template-columns: minmax(0, 1fr); } .metrics-grid { grid-template-columns: minmax(0, 1fr); } }
