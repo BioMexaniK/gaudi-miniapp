@@ -1,0 +1,514 @@
+[
+  {
+    "version": "5.100",
+    "date": "2026-09-17",
+    "title": "External watchdog for Supabase",
+    "why": "If Supabase itself stops (plan downgrade, pause, outage) nobody would be alerted",
+    "description": "GitHub Actions job gaudi-watchdog (public repo BioMexaniK/gaudi-miniapp, every 10 min) calls relay /health (Edge + DB + pg_cron freshness) and chat, alerts topic 🩺 directly via Bot API on change; Supabase daily check alerts if the job stops calling. Confirm runs for watch-only failures no longer spend n8n executions.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-17 — Live 17.09: normal run green; wrong key -> 🔴 message and topic renamed; restored -> 🟢; watchdog_seen_at updated."
+  },
+  {
+    "version": "5.99",
+    "date": "2026-09-17",
+    "title": "Emergency relay for Telegram/WhatsApp/web",
+    "why": "When n8n is down or out of executions clients got silence",
+    "description": "TG and WA now enter via Supabase Edge Function relay (setWebhook + WABA override_callback_uri); n8n entry = webhook + Respond {ok:true} + Code nodes keeping the old trigger names; old TG trigger disabled, WA trigger kept unconnected. No confirmation in 30 s or LLM down -> fixed EN phrase (app_settings.emergency_reply_text_en, once per 6 h) + mirror to the group. Web webhook answers from Web — принято; chat fn uses the same phrase and mirror. Health: relay probe, topic 🩺 with 🟢/🔴 name.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-17 — Live 17.09 via Telegram Web: Test. привет -> light, Test. покажите карнизы -> main through relay (--smoke OK); n8n URLs pointed at 404 for 2 min -> TG and web got the phrase, 2 mirrors in the group; restored and retested. WA via relay not live-tested (needs a phone message)."
+  },
+  {
+    "version": "5.98",
+    "date": "2026-09-17",
+    "title": "Health monitor, alerts, widget gate",
+    "why": "n8n execution limit ran out 16-17.09, bot was down ~1 day unnoticed",
+    "description": "Supabase health monitor (daily full check at digest_time-30 incl. n8n ping heartbeat branch Проверка — * checking Airtable/OpenAI/WhatsApp with n8n creds; 15-min watch with zero n8n executions; confirm-before-alert; Telegram alerts from SQL to topic 🩺 Бот; health line in morning digest). Widget mounts only when chat GET /status says show (bot not broken and auto_reply_enabled on).",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-17 — Live 17.09: full run all checks green (transient tg timeout cleared by confirm run), heartbeat arrived in 10 s, alert delivered to topic 1064, widget absent on gaudidecor.eu while bot_status=broken and back after restore"
+  },
+  {
+    "version": "5.97",
+    "date": "2026-09-17",
+    "title": "Supabase dispatcher replaces n8n polling triggers",
+    "why": "Polling schedules burned the 10k n8n execution limit; bot was down 16-17.09",
+    "description": "pg_cron dispatch_due_jobs() calls n8n webhooks only when work is due: follow-up (3+ client msgs, 30 min silence, one message), email (2+ client msgs), handoff release, digest at app_settings.digest_time",
+    "test": "НЕ ПРОВЕРЕНО ВЖИВУЮ — Next real follow-up/digest arrive; dispatch_log fills; no schedule-trigger executions in n8n"
+  },
+  {
+    "version": "5.96",
+    "date": "2026-09-17",
+    "title": "Cut n8n executions: follow-up stage 1 only, sparser schedules",
+    "why": "Scheduled triggers alone produced ~66k executions/month vs the 10k Pro limit",
+    "description": "Chat follow-up poll 2 min -> 20 min and only stage 1 (RPC followup_count < 1); email follow-up 30 min -> 2 h; Morning Digest from every-minute poll to one run at 00:00 MSK + Wait until digest_time",
+    "test": "НЕ ПРОВЕРЕНО ВЖИВУЮ — Digest arrives at the configured time next morning; a stage-1 follow-up is still sent within ~25 min of silence; no stage 2/3 appear"
+  },
+  {
+    "version": "5.95",
+    "date": "2026-09-12",
+    "title": "Stage4 round2: routing/followup delays from app_settings",
+    "why": "Move sticky TTL, off-topic mute threshold, human-pause TTL (prerouter.js) and follow-up delay windows (chat_followup_candidates params) into app_settings, admin-editable; part of miniapp Stage 4 round 2",
+    "description": "prerouter.js: TTL_MIN/HUMAN_PAUSE_MIN/MUTE_AFTER now read from sess._settings (populated by new merge node 'Предроутер — вход: объединить' between Сессия — чтение and Предроутер, which keeps all original sess fields untouched and adds _settings alongside) instead of hardcoded consts; same fallback values if settings missing/invalid, so behavior is unchanged unless someone edits the new settings. Досыл — кандидаты now gets its 6 stage-delay params from app_settings (with the same defaults inline as ?? fallback) instead of the SQL function's own built-in defaults. Migration adds an 'integer' value_type + 9 new settings, drops 2 unused off_hours_text_* rows; admin API GET+POST /settings now owner-only (previously GET was open to managers too); miniapp settings tab hides entirely for non-owners and supports integer inputs.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-12 — Smoke-тест прошёл: Test. привет -> light, Test. покажите карнизы -> main(CATEGORY_RU), обе ветки без ошибок"
+  },
+  {
+    "version": "5.94",
+    "date": "2026-09-12",
+    "title": "Stage4: auto-reply switch + email business hours from settings",
+    "why": "Config-driven kill switch (chat channels) and business-hours gate (email) instead of hardcoded Berlin hours; part of miniapp Stage 4",
+    "description": "Added auto_reply_enabled gate before Агент-продавец GAUDI (TG/WA/Web): off -> fixed pause text via existing Роутер вывода pipeline, no LLM call. Email — решение now reads business_hours_start/end + auto_reply_enabled from app_get_settings (Europe/Moscow) instead of hardcoded Europe/Berlin 08:00-17:00; switch off mutes email too (mark_human for open bot threads via new safe update path, human/opt-out threads untouched).",
+    "test": "НЕ ПРОВЕРЕНО ВЖИВУЮ — Live: flip auto_reply_enabled=false via admin app settings tab, send Test. message on TG/WA/Web -> expect fixed pause text to client + mirror in group, no LLM call; flip back on -> normal replies resume. Email: send a test email in/out of 09:00-18:00 MSK window with switch on, then off, check email_threads.owner and that no client auto-reply goes out while switch is off."
+  },
+  {
+    "version": "5.93",
+    "date": "2026-09-11",
+    "title": "Журнал корзин и дилерских уведомлений",
+    "why": "История корзин затиралась в site_orders, а дилерские уведомления и dealer_key не фиксировались",
+    "description": "Добавлены append-only журналы cart_attempts и dealer_notifications; Cart Sync и Manager Notify пишут события; notify_manager передаёт lead_key/channel; дилерские страны заполняют leads.dealer_key",
+    "test": "НЕ ПРОВЕРЕНО ВЖИВУЮ — Провести диалог до сборки корзины для дилерской страны (например Венгрия) и проверить cart_attempts, dealer_notifications и leads.dealer_key"
+  },
+  {
+    "version": "5.92",
+    "date": "2026-09-10",
+    "title": "Досыл клиенту, который перестал отвечать (TG/WA/web)",
+    "why": "Клиент задавал вопросы, бот отвечал, и диалог умирал без единой попытки вернуть клиента (живой пример — венгр, исполнение 4170).",
+    "description": "Новая ветка из 16 нод «Досыл — ...»: расписание раз в 2 минуты, RPC chat_followup_candidates() в Supabase, текст от gpt-5-mini на языке клиента, отправка в TG/WA (web забирает опросом), запись в messages и n8n_chat_histories, зеркало в тему менеджера, счётчик sessions.followup_count. Три стадии-окна: 5 мин-2 ч, 2-20 ч, 20-30 ч; третья только в дневном окне UTC и, для WhatsApp, внутри 24-часового окна Cloud API. Миграция 2026-09-10_chat_followup.sql разово закрыла 205 архивных сессий.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-10 — Живой прогон на web-канале (венгерский диалог): light -> main -> молчание 5 мин -> досыл stage1 на венгерском в 18:38 UTC, зеркало в тему менеджера 1015, messages.route_reason=followup:stage1, sessions.followup_count=1, память n8n_chat_histories пополнена. По ходу прогона найден и исправлен баг: обе Code-ноды в режиме runOnceForEachItem возвращали массив вместо объекта (A 'json' property isn't an object)."
+  },
+  {
+    "version": "5.91",
+    "date": "2026-09-07",
+    "title": "Channel parity: e-mail joins the lead/identity model, gets all tools",
+    "why": "Единая логика памяти и хранения для всех каналов (CHANNEL_PARITY_PLAN.md): почта была параллельной реализацией без leads-строки, значит без lead_key, person_id, воронки и памяти.",
+    "description": "SQL: consents.kind (storage|followup) + подразумеваемое согласие на хранение для не-web каналов + бэкфилл 13 лидов + storage_consent(); RPC email_lead_touch() создаёт лид почты и возвращает блок памяти; person_last_activity() учитывает email_threads. n8n: новый узел «Email — лид» между «Email — маршрут: reply?» и «Email — userText»; «Email — userText» переписан (берёт поля из «Email — решение», приклеивает блок памяти) и взят под файловый контроль; client_history, sync_cart, notify_manager подключены к почтовому агенту, привязка lead_key/channel/external_id резолвится на обоих путях. Промпт: [E-19] переписан (инструменты те же, что в чате; корзину бот в почте собирает сам — решение Артёма 2026-09-07), добавлен [E-20] про блок памяти в почте.\n\nПравила: E-19, E-20",
+    "test": "НЕ ПРОВЕРЕНО ВЖИВУЮ — Письмо с адреса, у которого есть история: появился лид email:*, тот же person_id, блок памяти виден в выходе «Email — userText», бот не проговаривает прошлый заказ, зеркало в группу работает. Каждый из трёх новых инструментов вызвать по разу на почтовом пути и по разу в Telegram (регрессия привязки lead_key)."
+  },
+  {
+    "version": "5.90",
+    "date": "2026-09-07",
+    "title": "[L-07]: the light agent gets rules for the client-memory block it was already receiving",
+    "why": "Live test 2026-09-07 (execution 3966): 'закажу как в прошлый раз' was routed to LIGHT, not main. The light agent received the memory block and named the client's past order correctly — but M70_tools.md is not in the light manifest, so it had NO rule telling it not to volunteer a past order, to confirm before acting, or what to do when it does not recognise the client. It behaved well by instinct, not by instruction, and the light agent is the FIRST thing a returning client meets.",
+    "description": "New [L-07] in light/L10_greeting.md: never volunteer the memory block or mention remembering them; on an explicit 'same as last time' confirm AND list the composition in one message and warn that articles/prices may have changed; state plainly that light has no tools and cannot build a cart, so hand into the normal ordering flow after confirmation; and if unrecognised, ask ONCE for the phone (e-mail second), never an order number.\n\nПравила: L-07",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-07 — Live Telegram 2026-09-07 (execution 3974): after /reset, a bare 'Здравствуйте' from a client whose memory block DID carry the 19.08.2026 order got a plain greeting back with no mention of the order — [L-07] holds. An earlier attempt looked like a failure but was an invalid test: the conversation still held my own previous 'repeat my order' turns, so the agent was reasonably continuing that thread."
+  },
+  {
+    "version": "5.89",
+    "date": "2026-09-07",
+    "title": "[E-19]: the e-mail agent stops advertising tools it does not have; [M-73] confirms with the list",
+    "why": "The e-mail agent was given [M-71] sync_cart, [M-72] notify_manager and now [M-73] client_history in its prompt while none of those tools are connected to it — a pre-existing mismatch that [M-73] would have made worse. Removing the rules from the e-mail build was not an option: [M-70] and [M-72] are cross-referenced from core/06_facts.md, M80_sales.md and M90_handoff.md, which e-mail keeps. And on the live test the agent asked for confirmation while listing the composition in the same message, which is better than what [M-73] prescribed.",
+    "description": "New [E-19] in E10_email_mode.md — an explicit, e-mail-only override naming the four tools the e-mail agent actually has and forbidding the other three, with order closing routed to [E-13]. [M-73] reworded: still never read an order back unprompted, but once the client HAS asked to repeat one, confirm AND list the composition in the same message instead of asking blind.\n\nПравила: E-19, M-73",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-07 — Live Telegram 2026-09-07: 'закажу как в прошлый раз, то же самое' on a fresh generation -> the agent confirmed AND listed the composition in one message ('вы хотите точно те же позиции и количества, что в прошлом заказе: 4.31.301 x10, G10.U.290 x5, G07.S.290 x1?'), which is the new [M-73] wording. The [E-19] half cannot be exercised: the e-mail channel has 0 threads and no leads rows at all (see STATE.md), so it is verified by reading, not by a run."
+  },
+  {
+    "version": "5.88",
+    "date": "2026-09-07",
+    "title": "client_history tool + [M-73]: how the agent handles a returning client",
+    "why": "Steps 1-5 gave the agent a short memory line at conversation start, but it is capped at ~80 tokens and truncates a long order. When a client says 'the same as last time' the agent needs the exact articles and quantities, and it needs stated rules for how to behave with someone it half-remembers.",
+    "description": "New sub-workflow 'GAUDI — Client History' (gwwUSKJmryebOAdA) over the new Supabase RPC client_history(), wired to the sales agent as a no-parameter tool — lead_key is bound from Parse Classification, so the agent cannot ask for anyone else's history. Rule [M-73] in M70_tools.md: call it only when the client themselves raises a past order; never read an order back unprompted; always re-confirm the composition before building a cart; and when the client is not recognised ask ONCE for the PHONE they used at the time (e-mail as the fallback), never for an order number — nobody remembers those.\n\nПравила: M-73",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-07 — Live Telegram 2026-09-07: 'Хочу повторить свой прошлый заказ' -> agent called client_history (execution 3952), got the full composition with product names, and asked to confirm the exact list before building a cart instead of ordering silently. No order number was requested."
+  },
+  {
+    "version": "5.87",
+    "date": "2026-09-07",
+    "title": "Long-term client memory: orders and facts reach the agent",
+    "why": "A client who ordered and went quiet came back to a bot that knew nothing about them. Order history never reached the agent at all, and it was not even being kept: site_orders carries a live UNIQUE(lead_key) and the cart tool upserts, so a second order overwrote the first.",
+    "description": "Supabase (schema.sql section 15): client_facts dossier written only at deal moments; client_orders append-only order archive fed by a trigger on site_orders (cart tool untouched, snapshots within 2h collapse so dialogue corrections do not become extra orders); person_lead_keys() as the single identity resolution; client_memory() RPC returning a ready ~80-token memory block across ALL channels of one person; contact_card_data() gained a '26 Ranee: N zakazov' line so a returning client is visible to the manager after a deleted topic. n8n: 'Profil klienta - chtenie' now calls rpc/client_memory (POST) with onError=continueRegularOutput; 'userText - final' uses the ready block and falls back to the old lead-based prefix if it is missing.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-07 — Live Telegram 2026-09-07: session pushed past 48h, new generation 58 opened, 'Профиль клиента — чтение' called rpc/client_memory and the agent received the prefix with the 19.08.2026 order (4.31.301 x10, G10.U.290 x5, G07.S.290 x1)."
+  },
+  {
+    "version": "5.86",
+    "date": "2026-09-05",
+    "title": "Дилерские страны: полная консультация вместо слива в 'where to buy'",
+    "why": "Реальный кейс 2026-09-05: клиент из Ирландии сказал 'хочу купить', попросил контакты партнёра — бот вместо предзаказа отправил на страницу where to buy и попрощался, лид потерян (leads.status остался 'new', контакт не взят). Плюс у Алексеева (Ирландия/Польша/Чехия) в Airtable Notify Channel=email, но Manager Email было пустым — уведомление даже при закрытии заказа ушло бы в никуда.",
+    "description": "Rule C-01: добавлена явная миссия бота — не просто отвечать, а вести к корзине/предзаказу, независимо от того, произнёс ли клиент слово 'купить'. [C-16]: в дилерских странах теперь ведём ПОЛНУЮ консультацию как везде, не сокращаем её из-за упоминания доставки/партнёра; при закрытии заказа говорим прямо 'мы сами принимаем предзаказ и передаём партнёру, он свяжется для уточнения деталей', а не даём ссылку where to buy как финал (ссылка — только если сам просит найти дилера). [M-57] шаг (3)/(4): разделены на direct-ship (называем порог/срок) и dealer/partner (не называем наши цифры, закрывающая фраза per [C-16]). Отдельно (вне промпта) — донастроен Airtable Dealers: Manager Email=gaudibaltic@gmail.com добавлен для Ирландии/Польши/Чехии (Алексеев), три страны с Notify Channel=email не имели адреса.\n\nПравила: C-01, C-16, M-57",
+    "test": "НЕ ПРОВЕРЕНО ВЖИВУЮ — Прогнать диалог в веб-виджете от лица дилерской страны (например Ирландия): сказать что хочешь купить конкретный товар, довести до состава заказа, проверить что бот сам предлагает предзаказ с фразой про партнёра (не даёт голую ссылку where to buy), и что notify_manager реально шлёт письмо на gaudibaltic@gmail.com (сессия Алексеева)."
+  },
+  {
+    "version": "5.85",
+    "date": "2026-09-05",
+    "title": "Безопасное удаление тем: авто-восстановление вместо падения",
+    "why": "Ручное удаление темы в Telegram молча ломало диалог клиенту: узел «Telegram — отразить сообщение клиента» падал с «message thread not found», а он — жёсткие ворота перед всей цепочкой ответа, и агент до ответа не доходил. thread_for_lead() при этом вечно возвращал мёртвый topic_id, так что клиент оставался без ответа навсегда.",
+    "description": "У узла-зеркала включён аварийный выход (continueErrorOutput). Он ведёт в «Тема — восстановление?» (защита от петли: $runIndex === 0) -> «Тема — битая: закрыть» (PATCH handoff_threads в closed; частичный уникальный индекс требует закрыть ДО вставки новой) -> существующая цепочка создания темы -> повторная отправка зеркала. При второй неудаче — мягкий выход прямо в IF Spam, клиент в любом случае получает ответ. «Тема — свести topicId» теперь предпочитает тему, созданную в этом же прогоне (иначе повтор подставлял ту же мёртвую); «Хендофф — записать тему» переведён с .item на .first()/.last(), чтобы не зависеть от paired-item на аварийном пути.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-05 — Живой прогон 2026-09-05 на синтетическом веб-диалоге: тема 950 удалена через deleteForumTopic, следующее сообщение восстановилось само — запись 41 закрыта, создана тема 956, зеркало ушло в неё, клиент получил ответ, прогон 3792 success. Аварийная ветка отработала ровно один раз (петли нет). Отдельно починена привязка Артёма (telegram:1630684, мёртвая тема 12)."
+  },
+  {
+    "version": "5.84",
+    "date": "2026-09-05",
+    "title": "Статус темы — родной иконкой Telegram + кнопки Закрыть/Вернуть на карточке",
+    "why": "Значок в ИМЕНИ темы не работал: Telegram молча срезает ведущую ✅ (editForumTopic отвечает ok:true, имя сохраняется без неё), а ручная правка темы человеком стирает и остальные эмодзи — на телефоне статуса не было видно вообще. Менеджерам также неудобно набирать команды руками.",
+    "description": "Статус переехал в icon_custom_emoji_id темы (палитра getForumTopicIconStickers): ✅ закрыт, ❗️ сбой, 👀 менеджер, ⁉️ нужен менеджер, ❓ висит >3 дней, 🛒 корзина, 🤖 бот (мэппинг Артёма 2026-09-05, 🆘/👤/⚠️/⌛ в палитре нет). Новая lead_topic_icon_id(), handoff_threads.contact_card_icon, contact_card_data отдаёт icon_id/set_icon, имя темы снова чистое «Имя · Канал · Контакт», в карточку добавлена строка «Статус: <эмодзи>». sweep_stale_topics сравнивает иконки. На закреплённой карточке — инлайн-кнопки «✅ Закрыть лид» и «🔓 Вернуть бота»; telegram_normalizaciya.js понимает callback_data close наравне с release, добавлены узлы «/close: это кнопка?» → «/close: callback ответить».",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-05 — Иконки тем: все 11 открытых тем получили родную иконку (✅ Ko Di, ⁉️ Артём/Julia, ❓ Дмитрий/Екатерина/Andrey/SF, 🤖 остальные), имена очищены от эмодзи. Кнопки на карточке проверены в теме 852: «✅ Закрыть лид» → лид закрыт (closed_by Артём) + иконка ✅ + ответ на кнопку, «🔓 Вернуть бота» → «Бот снова отвечает клиенту». Тестовый лид возвращён в bot."
+  },
+  {
+    "version": "5.83",
+    "date": "2026-09-04",
+    "title": "Утренний дайджест в General, 09:00 МСК (блок 5)",
+    "why": "У Артёма/Андрея не было ежедневной сводки по воронке и списка тем, где клиент ждёт ответа — приходилось смотреть funnel_daily и список тем руками.",
+    "description": "Новый воркфлоу GAUDI — Morning Digest (ehuNAyZ4TbP2e4yv): schedule 0 6 * * * UTC (=09:00 МСК, у Москвы нет DST) → rpc morning_digest_payload() → Telegram sendMessage в General (без message_thread_id). SQL: morning_digest_text() — вчерашняя воронка (сумма из funnel_daily по всем каналам, current_date-1), отдельно rolling last-24h счётчик диалогов (по просьбе FUNNEL_SPEC.md — не путать с дневной когортой), и живой список 🆘 needs_human тем со ссылками и часами ожидания; morning_digest_payload() оборачивает текст в json для HTTP-узла n8n.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — Прогнал rpc+Telegram-отправку вручную (сам workflow с расписанием запустить через MCP нельзя — не включён MCP-доступ у него, не стал включать ради 3-узлового воркфлоу): пост ушёл в General, HTML отрендерился (жирный текст, кликабельные ссылки на темы 224 и 12), тестовое сообщение удалено. Сам крон в 06:00 UTC ещё не срабатывал — это первое, что нужно проверить в следующей сессии."
+  },
+  {
+    "version": "5.82",
+    "date": "2026-09-04",
+    "title": "Корзина в странах-дилерах без хеджирования + слияние двух закреплённых в теме (доп. пункты роадмапа)",
+    "why": "Агент хеджировал самовывоз/self-checkout в странах с локальным партнёром, хотя Артём разрешил его 2026-09-04; тема менеджера получала два разных закреплённых сообщения (шапка диалога + карточка контакта) вместо одного.",
+    "description": "Правки [C-16]/[M-70]: явное разрешение self-checkout (sync_cart) в странах-дилерах — не блокирует и не откладывает, просто notify_manager после как обычно. contact_card_data() теперь СРАЗУ формирует объединённое сообщение (🆕 шапка: имя/канал/язык/prior_note — бывший отдельный 'Новый диалог с ботом' — плюс 📇 контакт, когда он есть) и именно его шлёт/пинит/правит; узел «Тема — карточка саммари» убран из живого workflow, «Хендофф — записать тему» теперь пишет prior_note/prev_topic_id в handoff_threads (новые колонки) для функции. Бэкфилл всех открытых тем; 3 «мёртвые» handoff_threads (топики удалены вручную) закрыты по ходу.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — Живой прогон через веб-виджет (demo-страница, curl /start+/consent+/send): новая тема 900 получила ОДНО сообщение-карточку (🆘 Клиент/Канал/Страница), закреплено, без отдельной шапки; бэкфилл 11 открытых тем прошёл (contact_card_title/text содержат 🆕+📇). C-16/M-70 wording changed but not yet live-tested in a real dialogue — that still needs Artyom to ask about self-checkout in a dealer country."
+  },
+  {
+    "version": "5.81",
+    "date": "2026-09-04",
+    "title": "Статусы в имени темы + /close для менеджеров (блок 4)",
+    "why": "Менеджеру не видно из списка тем, где бот работает, где нужен человек, где корзина и что уже закрыто; закрывать лид должен человек.",
+    "description": "leads.lead_state (bot|needs_human|manager|closed) + closed_by/error_at; lead_topic_icon() ставит значок ПЕРВЫМ символом имени темы (✅⚠️👤🆘🛒🤖 + ⌛ старше 3 дней); переходы — SQL-триггеры на sessions/handoff_threads/messages/leads; contact_card_data теперь переименовывает тему и без контакта; pg_cron sweep_stale_topics 06:05 UTC для ⌛; в бою: узлы «Хендофф — команда /close?» → «/close: записать» (rpc lead_close) → подтверждение, и «Алерт — ошибка: пометить» (rpc lead_error) от трёх alert-веток; alert_sboy_*.js отдают leadKey.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — Тема 852: сообщение менеджера → 👤, /close → ✅ + «Лид закрыт: Артём», closed_by/closed_at проставлены, лестница → closed; 14 тем переименованы бэкфиллом. ⚠️ проверена только через rpc lead_error (реального сбоя агента не было)."
+  },
+  {
+    "version": "5.80",
+    "date": "2026-09-04",
+    "title": "Uploads kept a week, images shrunk before vision, 20 MB Bot API guard, weekly topic cleanup",
+    "why": "Photos from the site piled up in Supabase forever, vision paid for every pixel of a phone shot, a >20 MB file would have thrown in Фото — скачать, and topic cleanup ran daily for a once-a-year job.",
+    "description": "Web uploads now land flat in the bucket (uuid.ext) and GAUDI — Uploads Cleanup (7 days) (ziyw67emNdfOIobH, daily 02:20 UTC) lists the bucket and bulk-deletes anything older than a week — the manager topic keeps the real copy. New Фото — ужать (Edit Image, 1600 px, JPEG q82, onlyIfLarger, onError passthrough) sits in front of Фото — вижн on all three channels. New Фото — не тяжёлый? routes media over 18 MB past the download branch: Память-версия asks the client for a compressed copy while the original still reaches the topic by file_id. Topic cleanup moved to weekly (Sun 01:30 UTC), 200 threads per run, status filter open -> neq.deleted.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — Live 2026-09-04: a 2400 px upload came out of Фото — ужать as a 29.6 kB JPEG, vision read the plan, the mirror posted into the topic; the uploads sweep ran on a forced one-minute schedule (bucket listed, nothing stale, schedule restored); old sid/-folder test files deleted by hand."
+  },
+  {
+    "version": "5.79",
+    "date": "2026-09-04",
+    "title": "Media mirroring into the manager topic + photos from the site widget",
+    "why": "A client's photo reached the manager only as a vision description; the site widget could not send a photo at all.",
+    "description": "Normalisers now carry mirrorId/mediaKind/mediaName (Telegram documents included) through Память-версия; new branch Фото — web? downloads a web upload from the chat-uploads bucket into Фото — вижн; a parallel mirror branch off the client text mirror posts the original into the topic: Telegram by file_id, web via a signed URL, WhatsApp by re-fetching the binary (skipped above 8 MB with a text note). Widget: paperclip with in-browser downscale to 1600px/JPEG, 12 MB source cap, upload allowed only after a contact is left (Edge Function /upload enforces it). Vision maxTokens 1200 -> 2600 after a run where reasoning ate the whole budget.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — Live-tested on all three channels 2026-09-04: Telegram photo (by file_id) and PDF document reached topic 12, WhatsApp photo (re-fetched binary) reached topic 24, web photo (signed URL) reached topic 852; vision read a floor plan uploaded from the widget; the upload contact gate returns 403 both server-side and in the widget."
+  },
+  {
+    "version": "5.78",
+    "date": "2026-09-04",
+    "title": "Web widget: real unread badge while the panel is closed",
+    "why": "Roadmap block 1: a manager's reply never reached a visitor who had closed the panel. schedule()/poll() bailed out entirely once opened became false, so nothing polled again until the panel was reopened -- the main sales path was silently dropping replies.",
+    "description": "widget/gaudi-chat.js: schedule()/poll() now key off started + document.hidden instead of opened, running a slow 25s background poll while the page is open and the panel is closed; close() calls schedule() again so the loop keeps running instead of going silent. A bot/manager message arriving while closed calls the new markUnread(): adds .unread to the launcher (CSS lets .newdot win over .calm) and reuses the pre-chat teaser bubble to show a plain-text preview with the sender's name (new plainPreview()/dismissReplyTeaser() helpers, teaserMode flag). Opening the panel clears the badge and the bubble and shows the message, already appended to the thread from the background fetch. Teaser click handling moved out from under 'if (INVITE_ON)' so the preview bubble stays clickable on sites that disable the marketing invite. No backend change: the poll: throttle bucket (600 req/10min per IP) has headroom for the added background requests.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — Live-tested on gaudidecor.eu via the built-in browser pane (2026-09-04): sent a message through the widget, closed the panel, then wrote a role='manager' row into messages directly (bypassing Telegram) to isolate the widget's own logic. Confirmed document.hidden correctly pauses the background poll while the pane/tab is not visible, and resumes it (visibilitychange -> poll()) once visible again. Within one 25s background cycle after becoming visible: launcher gained class unread (dot shows through .calm via the new CSS rule), the teaser bubble showed the manager's name and a plain-text preview of the message, and the reply was already appended to the thread. Clicking the launcher cleared both unread and the bubble and opened the panel with the message already there. Did not separately live-test the data-invite=off code path (teaser click handler moved outside the INVITE_ON guard) or a real Telegram-manager round trip -- both are low-risk, mechanical changes."
+  },
+  {
+    "version": "5.77",
+    "date": "2026-09-04",
+    "title": "Подсказка у кнопки Telegram — над кнопкой, а не под курсором",
+    "why": "Артём 2026-09-04: браузерная подсказка из title= выпадает ниже курсора, и указатель мыши закрывает часть текста.",
+    "description": "widget/gaudi-chat.js: у кнопки .tg убран атрибут title, вместо него собственная подсказка через ::after с текстом из aria-label — над кнопкой, прижата к её правому краю (на узком экране не вылезает за панель), появляется по hover и по focus-visible. Доступность не пострадала: aria-label остался, добавилась подсказка с клавиатуры.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 на gaudidecor.eu: подсказка «Verder in Telegram» показывается над синей кнопкой внутри панели, курсор её не перекрывает."
+  },
+  {
+    "version": "5.76",
+    "date": "2026-09-04",
+    "title": "Кнопка чата: пульс иконки + точка непрочитанного",
+    "why": "Артём выбрал комбо 4+6 из тестовой страницы вариантов: кнопку виджета на сайте плохо замечают.",
+    "description": "widget/gaudi-chat.js: иконка разговора дышит (gd-icon, 2,6 с), в углу пилюли появляется красная точка с лёгким хлопком через 1,2 с (gd-dot). Оба сигнала гаснут навсегда, как только посетитель открыл чат (класс .calm), и не показываются вовсе тому, кто уже писал нам (флаг gaudi_talked). Состояния покоя сделаны видимыми, поэтому при системном «уменьшить движение» точка остаётся на месте, а анимация просто выключается. Точка встаёт со стороны экрана, к которой прижата кнопка (data-position).",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 — ПРОВЕРЕНО ВЖИВУЮ 2026-09-04 на gaudidecor.eu: точка видна на кнопке «Schrijf ons», иконка анимируется (gd-icon); после открытия чата класс .calm проставлен, точка скрыта, анимация иконки none."
+  },
+  {
+    "version": "5.75",
+    "date": "2026-09-03",
+    "title": "C-26: прямым текстом объяснять, зачем оставлять контакт",
+    "why": "Артём 2026-09-03: поле контактов, выехавшее без объяснения, никто не заполняет — нужно словами сказать, что даёт контакт.",
+    "description": "C-26: в том же ответе бот обязан одной короткой фразой на языке клиента сказать выгоду — оставите телефон или e-mail, и подборка не потеряется при закрытии вкладки, менеджер пришлёт артикулы, ссылки и расчёт. Годится любая половина: получить подборку или не потерять её. Без абзацев про наши процессы.\n\nПравила: C-26",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 (веб, ru): на «подберите карнизы для гостиной 20 м²» бот выдал три карниза со ссылками на каталог и закончил фразой «Если оставите телефон или e-mail, подборка не потеряется при закрытии страницы — менеджер отправит вам модели, ссылки и расчёт» + маркер [[contact]]. Это был первый ответ диалога — новое исключение из «не в первом ответе» отработало."
+  },
+  {
+    "version": "5.74",
+    "date": "2026-09-03",
+    "title": "C-26: подборка из каталога — всегда просить контакт",
+    "why": "Артём 2026-09-03: как только бот выдал результат из каталога, нужно сразу разворачивать полный запрос контактов — это момент, когда клиенту уже есть что терять.",
+    "description": "C-26: подборка из каталога стала ГЛАВНЫМ и обязательным триггером маркера [[contact]] (раньше был в общем списке поводов и модель его пропускала); запрет «не в первом ответе» снят для случая, когда в первом же ответе названы товары. Виджет: страховка на случай забытого маркера — ответ бота со ссылкой на gaudidecor.eu/catalogue/ раскрывает плашку сам, один раз за визит, только на живых ответах (не при перечитывании истории).\n\nПравила: C-26",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Тем же прогоном: подборка из каталога в ПЕРВОМ ответе несёт маркер [[contact]], плашка раскрывается на все три поля. Страховка в виджете (ссылка gaudidecor.eu/catalogue/ раскрывает плашку сама) залита в бой."
+  },
+  {
+    "version": "5.73",
+    "date": "2026-09-03",
+    "title": "C-27: «пришлите на почту» — брать контакт, а не отправлять клиента писать нам",
+    "why": "Живой прогон Андрея 2026-09-03: на «сможешь прислать на почту, если выберем?» бот перечислил info@ и WhatsApp и попросил клиента самого написать нам список и адрес. Это перекладывание работы на клиента ровно в тот момент, когда он сам предлагает контакт — лид теряется. Андрей просил добавить в это сообщение телеграм.",
+    "description": "Новое правило C-27: просьба прислать что-либо на почту (или вопрос «как вы со мной свяжетесь») = момент забрать контакт. Бот коротко говорит, что письма не шлёт, и просит адрес/телефон, обещая, что пришлёт менеджер; на сайте это [[contact]]-момент, и там же можно один раз упомянуть кнопку Telegram у поля ввода (в TG/WA/почте — нельзя). info@ остаётся ответом только на вопрос о контактах компании.\n\nПравила: C-27",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Живой веб-прогон 2026-09-03 на вопросе Андрея («сможешь прислать ссылку на почту, если что-то выберем?»): бот отвечает, что сам письма не шлёт, просит e-mail, обещает письмо от менеджера, одной фразой предлагает кнопку Telegram и ставит [[contact]] — плашка раскрывается. info@ клиенту больше не навязывается."
+  },
+  {
+    "version": "5.72",
+    "date": "2026-09-03",
+    "title": "Карточка контакта: закреплённое сообщение в теме менеджеров",
+    "why": "Менеджер, открывая тему, не видел, как связаться с клиентом помимо самого чата (Артём, 2026-09-03).",
+    "description": "Новый воркфлоу «GAUDI — Карточка контакта» (UUtNUH1LqcGmSHvl, вебхук /gaudi-contact-card): постит в тему карточку (имя, телефон tap-to-copy, e-mail, wa.me, канал, страница, язык), закрепляет её и правит ТО ЖЕ сообщение при изменениях. Supabase: contact_card_data() собирает текст и заголовок, notify_contact_card() шлёт пинг через pg_net, триггеры на leads (insert + реальное изменение contact/display_name/username/person_id) и на handoff_threads (создание темы). Колонки handoff_threads.contact_card_message_id/_text/_title. Переименование темы в «Имя · Канал · Контакт» готово, но ждёт TELEGRAM_BOT_TOKEN в web_config.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — ПРОВЕРЕНО ВЖИВУЮ 2026-09-03: карточка отправлена и закреплена в теме 730 (pin вернул ok:true), правка display_name в базе отредактировала ТО ЖЕ сообщение 757 (edit_date проставлен, дубля нет), handoff_threads обновился. Не проверено: переименование темы — нет токена в web_config."
+  },
+  {
+    "version": "5.71",
+    "date": "2026-09-03",
+    "title": "C-16: warm the client before asking a dealer country for order details",
+    "why": "On a first-touch delivery question from a dealer country the bot demanded articles, quantities, address and contacts from a client who had chosen nothing yet — a form, not a consultation. Dealers should receive warmed-up clients with a ready selection.",
+    "description": "Split C-16 by dialogue stage: (a) nothing chosen yet — no data collection, no where-to-buy link, one warm line offering to help choose, then normal discovery per M-01/M-61; (b) composition settled — collect articles/quantities/city/contact and hand off per M-57.\n\nПравила: C-16",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Live web test: first message 'do you deliver to Belgium?' — bot states the local partner handles it and offers to help choose (room/look), no articles/quantities/address/contacts asked, no wheretobuy link. Answered by the light branch, prompt_version v5.71 logged."
+  },
+  {
+    "version": "5.70",
+    "date": "2026-09-03",
+    "title": "Telegram deep link: keep the system note out of sight",
+    "why": "Live test: the instruction '[The client just opened this chat from the website widget.]' was mirrored into the manager forum as if the client had typed it, and the agent read it literally and answered 'Вы на сайте — отлично'.",
+    "description": "Память-версия: the note is now explicitly marked SYSTEM and tells the agent not to greet again, not to claim the client is on the website, and not to mention the note. «Telegram — отразить сообщение клиента» replaces any SYSTEM note with '↪️ Клиент перешёл сюда из чата на сайте' before mirroring.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Confirmed by Artyom: the forum now shows '↪️ Клиент перешёл сюда из чата на сайте' instead of the bracketed system instruction, and the bot no longer answers as if the client were still on the website."
+  },
+  {
+    "version": "5.69",
+    "date": "2026-09-03",
+    "title": "Continue in Telegram from the website chat",
+    "why": "A website visitor is anonymous — close the tab and the thread is gone. Moving the conversation into Telegram gives the sales team an address they can come back to, without the client typing a phone number.",
+    "description": "New: link_tokens table + redeem_link_token() RPC (single use, 15 min); /tg-link in the Edge Function returns a t.me deep link; widget shows a small rounded-square Telegram button above Send (hover on pointer devices, dimmed-but-visible on touch). Workflow: «TG — ссылка с сайта?» + «TG — обменять токен» sit between «Память-версия» and «Bug Detect»; Память-версия recognises '/start <code>'; userText — финал prepends a recap of the website conversation so the agent continues instead of greeting anew. Redeeming also binds the Telegram lead to the same person, so the manager keeps one thread.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Live pass by Artyom from a real Telegram account: the widget button opened the bot, the conversation continued with the website context (the bot offered to shortlist the cornices discussed on the site), and the handoff landed in his existing telegram topic rather than a new one."
+  },
+  {
+    "version": "5.68",
+    "date": "2026-09-03",
+    "title": "Ask for a phone, not an e-mail",
+    "why": "Artyom: a phone number is what the sales team can act on; an e-mail address is a weaker lead.",
+    "description": "Rule C-26 now asks for a phone number (WhatsApp counts) and only accepts an e-mail if the client offers one. Widget fields relabelled accordingly; the fallback form's required field is the phone.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Verified live on the widget: optional phone on the consent screen, amber strip appears after the first reply, the agent's [[contact]] marker opens the field by itself and never reaches the visitor as text; Telegram/WhatsApp formatters strip it. Phone is now the primary ask."
+  },
+  {
+    "version": "5.67",
+    "date": "2026-09-03",
+    "title": "Tell the agent the page language",
+    "why": "Seen live: an English question from an English page came back answered in Russian, although the session language was 'en'. Rule C-03 relies on the model inferring the language; on the web we can simply state it.",
+    "description": "usertext_final.js: the page-context line now also carries the widget's language, with an explicit instruction to answer in the language the client writes in and fall back to the page language when that is unclear.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Verified live on the widget: optional phone on the consent screen, amber strip appears after the first reply, the agent's [[contact]] marker opens the field by itself and never reaches the visitor as text; Telegram/WhatsApp formatters strip it. Phone is now the primary ask."
+  },
+  {
+    "version": "5.66",
+    "date": "2026-09-03",
+    "title": "Optional contact capture on the website",
+    "why": "A web lead with no contact is unreachable, but demanding a phone before the first message costs conversations. Andrei and Artyom agreed: optional on entry, a gentle amber strip afterwards, and the agent asks once when it actually has something to send.",
+    "description": "New rule C-26: on the website only, the agent appends the token [[contact]] once, at the moment a contact becomes useful, and asks where to send the shortlist. The widget turns it into a small phone/e-mail field and never shows the token; the Telegram and WhatsApp formatters strip it so it cannot leak. Widget: optional phone field on the consent screen, amber strip under the header after the first reply, both feeding /contact.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Verified live on the widget: optional phone on the consent screen, amber strip appears after the first reply, the agent's [[contact]] marker opens the field by itself and never reaches the visitor as text; Telegram/WhatsApp formatters strip it. Phone is now the primary ask."
+  },
+  {
+    "version": "5.65",
+    "date": "2026-09-03",
+    "title": "Greeting says the name, not the job title",
+    "why": "Seen live in the manager forum: the bot opened an ordinary greeting with 'I'm Toni, GAUDI Decor's AI selection assistant' although nobody had asked — the two neighbouring rules bled into each other.",
+    "description": "Rule C-25: introduce yourself as 'Toni from GAUDI Decor'; the fuller 'AI selection assistant' phrasing is reserved for [C-02], i.e. only when the client actually asks whether they are talking to a person.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Live: greeting now reads 'Hello! I'm Toni from GAUDI Decor.' with no job title. Manager mirror verified from execution data — markup stripped, links rendered as 'text (url)', link previews off."
+  },
+  {
+    "version": "5.64",
+    "date": "2026-09-03",
+    "title": "Cross-device identity: threads follow the person",
+    "why": "The same client writing from a phone, a desktop and WhatsApp produced three separate forum topics and three unrelated leads; managers could not tell it was one person.",
+    "description": "New: people / person_contacts tables, leads.person_id, handoff_threads.person_id, contact_key() normalisation and triggers that merge identities whenever a contact repeats (WhatsApp external_id counts as a phone). New RPC thread_for_lead(): returns this session's open topic, else the person's open topic if it saw activity within 30 days (re-pointing that thread at the current session so manager replies land right), else null plus a link to their previous topic. Node «Хендофф — найти тему» now calls that RPC; «Хендофф — разобрать ответ» parses the richer row; the summary card shows a prior-contact note and links back to the previous topic.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-03 — Two web sessions with the same phone merged into one person and, crucially, into ONE forum topic (672) — the second device reused the first one's thread instead of opening a duplicate, and the thread was re-pointed at the newer session. Telegram/WhatsApp lookups verified unchanged via direct RPC calls (telegram:1630684 -> topic 12, whatsapp:79265322532 -> topic 24)."
+  },
+  {
+    "version": "5.63",
+    "date": "2026-09-02",
+    "title": "Bot has a name: Toni",
+    "why": "Andrei asked the assistant to feel like a person; a name does that without breaking [C-02]. Agreed with Artyom and Andrei 2026-09-02, together with the web widget header 'Toni — GAUDI AI assistant'.",
+    "description": "New rule [C-25] in core/00_identity.md: introduce yourself as Toni once per conversation, in the client's language and script, never as a per-message signature; the name does not override the honesty rule [C-02]. Lands in all three prompts (core is shared by light, main and email).",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-02 — Verified on the web channel: the first reply introduces 'I'm Toni from GAUDI Decor', the follow-up does not repeat the name, and 'are you a real person or a bot?' still returns the [C-02] answer ('Toni, GAUDI Decor's AI selection assistant, a live manager can join'). Telegram/WhatsApp not re-checked — the change is additive and channel-agnostic."
+  },
+  {
+    "version": "5.62",
+    "date": "2026-09-02",
+    "title": "Web chat channel: n8n branch",
+    "why": "The site widget needs a third channel; Telegram/WhatsApp routing was a binary IF with no room for it, and /reset|/bug were open to any channel that is not Telegram.",
+    "description": "New nodes: Web — вебхук (secret header), Web — секрет?, Web — нормализация, Роутер вывода: web?, Формат Web, Хендофф — клиент web?, Web — менеджер: без отправки. Existing: Память-версия gates commands on web too; userText — финал adds the visitor's page URL; Лог вызова writes the web reply and skips the duplicate client row; Upsert Lead no longer overwrites fields with empty values (protects leads.contact on ALL channels); Telegram — отразить ответ бота falls back to Формат Web so web replies still mirror to the manager forum.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-09-02 — Web channel live end-to-end: greeting via light (3.8s), catalogue answer via main (26.8s), page URL reached the agent, manager takeover from the forum relayed into the browser with the manager's name and released cleanly. Telegram regression confirmed by Artyom."
+  },
+  {
+    "version": "5.61",
+    "date": "2026-08-26",
+    "title": "L-01: приветствие light — язык клиента вместо зашитого русского примера",
+    "why": "Тоже внесено напрямую в живой узел, вне пайплайна; причина не задокументирована. Та же языковая генерализация, что и v5.59 для основного промпта, только этот файл (light/L10_greeting.md) не входит в main и был пропущен при вчерашней записи.",
+    "description": "L-01: добавлено «Reply in the client's language (per [C-03]); good, e.g. in Russian:» перед примерами приветствий. Поведение не меняется, только языковая маркировка примера.\n\nПравила: L-01",
+    "test": "НЕ ТРЕБУЕТСЯ — чисто языковая пометка примера, поведение не меняет — тот же случай, что и v5.59."
+  },
+  {
+    "version": "5.60",
+    "date": "2026-08-26",
+    "title": "Предроутер: needs_human роутит в main — обход дыры, из-за которой light сам палил контакты",
+    "why": "Внесено напрямую в живой узел (в обход файлов), но с собственным объясняющим комментарием в коде, датированным 2026-08-26 — редкий случай, когда причина документирована в самом узле. Сообщение вида «хочу поговорить с менеджером» не давало хита ни по PATTERNS (нет товарных слов), ни по PRODUCT_INTENTS, не анкорилось GREETING — падало в route='light' по умолчанию. У light нет M90_handoff.md (M-46/M-56), поэтому вместо хендофф-фразы модель на light сама импровизировала и выдавала клиенту контакты (WhatsApp/email) — прямое нарушение M-46, которое физически не могло сработать на light-ветке, т.к. правило туда не попадает.",
+    "description": "prerouter.js: новая ветка `else if (cls.needs_human === true) route='main'` перед проверкой GREETING (порядок важен — если сообщение одновременно похоже на приветствие и просит менеджера, теперь оно уходит в main, где есть M-45/M-46). Это прямая пара к вчерашней записи про M-45/M-46 (v5.58) — без этой правки роутинга те правила текста просто не получали нужных сообщений. Заодно синхронизирована незначащая мелочь — точка с запятой на последней строке файла, отличавшаяся от боевого узла ещё раньше, вне связи с этой правкой.\n\nПравила: M-45, M-46",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-26 — 2026-08-26, Telegram, ручные прогоны Артёма 12:29-13:11 (несколько /reset подряд, «хочу поговорить с менеджером» из Венгрии/Финляндии) — во всех случаях пришёл корректный M-46-хендофф («Запрос менеджеру отправлен... А пока — если нужно что-то ещё подобрать, с радостью помогу!»), а не импровизация с контактами — значит сообщение действительно уходило в main, роутинг отработал."
+  },
+  {
+    "version": "5.59",
+    "date": "2026-08-26",
+    "title": "Языковая генерализация: убраны захардкоженные русские примеры-фразы в ~10 правилах",
+    "why": "Тоже внесено напрямую в живой узел, вне файлового пайплайна; причина в CHANGELOG не зафиксирована. Судя по формулировке (везде добавлено «in the client's language, e.g. ...» перед примером), это защита от того, что бот мог произнести зашитую русскую фразу-пример буквально, даже когда диалог идёт на другом языке.",
+    "description": "M-06, M-67, M-62, M-65, M-09, M-12, M-60, M-41, M-42, M-56: примеры реплик клиенту помечены «in the client's language, e.g. ...» вместо голого русского текста. Логика и условия правил не изменились, изменилась только языковая маркировка примеров формулировок.\n\nПравила: M-06, M-67, M-62, M-65, M-09, M-12, M-60, M-41, M-42, M-56",
+    "test": "НЕ ТРЕБУЕТСЯ — чисто языковая пометка примеров формулировок, поведение не меняет; после патча файлов живой текст узла и пересобранный dist/prompt_main.txt совпали побайтово — большего проверять нечего."
+  },
+  {
+    "version": "5.58",
+    "date": "2026-08-26",
+    "title": "M-45/M-46: прямая просьба «поговорить с менеджером» — сразу хендофф + тёплая фраза вместо голого стоп",
+    "why": "Тоже внесено напрямую в живой узел, в обход файлов — судя по истории чата с ботом, это правка по итогам ручного тестирования Артёма сегодня в 12:29-13:11 (несколько /reset подряд с фразой «хочу поговорить с менеджером», формулировка ответа менялась между попытками). Точная причина и обсуждение в CHANGELOG не зафиксированы — запись восстановлена по факту текста узла и по видимой в Telegram истории тестов, а не со слов автора правки.",
+    "description": "M-45 явно перечисляет прямую просьбу клиента о менеджере/человеке («поговорить с менеджером», «соедините с человеком» и т.п.) как самостоятельный триггер немедленного хендоффа, отдельно от просьбы контактов компании. M-46 переписан: реплика хендоффа теперь всегда на языке клиента и дополняется одной тёплой фразой («а пока — если нужно что-то ещё подобрать или уточнить, с радостью помогу») вместо голого стоп-сообщения, при этом явно НЕ открывает WhatsApp/e-mail/контакты как побочный эффект — те остаются за C-21 и даются только по отдельной просьбе клиента.\n\nПравила: M-45, M-46",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-26 — 2026-08-26, Telegram, ручные прогоны Артёма 12:29-13:11 (видно в истории чата с ботом): «Здравствуйте, я из Венгрии/Финляндии, хочу поговорить с менеджером» -> «Запрос менеджеру отправлен, он подключится в ближайшее рабочее время. А пока — если нужно что-то ещё подобрать или уточнить, с радостью помогу!» — воспроизведено стабильно на нескольких заходах подряд."
+  },
+  {
+    "version": "5.57",
+    "date": "2026-08-26",
+    "title": "M-72 notify_manager: тихое уведомление менеджера/дилера при закрытии заказа",
+    "why": "Прошлая сессия внедрила саб-воркфлоу «GAUDI — Manager Notify» и подключила его как tool notify_manager, но правку в системный промпт внесла напрямую в живой узел через MCP, в обход build.py/deploy.py — до этого бот закрывал заказ (self-checkout корзина или дилерская страна без корзины) без фонового уведомления ответственного менеджера/дилера, тот узнавал о заказе только вычитывая историю диалога.",
+    "description": "Новое правило M-72 (tool notify_manager: вызывается один раз в фоне в момент закрытия заказа, не паузит диалог с клиентом, параметры country/city/items_summary/cart_url/note). M-70 (self-checkout) и M-57 (закрытие без корзины) дополнены явным вызовом notify_manager в тот же ход. Файлы M70_tools.md/M80_sales.md/M90_handoff.md приведены в соответствие с уже задеплоенным текстом узла — сама фича была в проде с сегодняшнего утра, менялись только файлы.\n\nПравила: M-70, M-57, M-72",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-26 — 2026-08-26, Telegram, /reset + ожидание ответа перед каждым шагом. Сценарий 1 (Германия, self-checkout): «Здравствуйте! Хочу заказать фасадный карниз GAUDI 4.31.301, 10 штук. Я из Германии» -> бот собрал корзину, отдал cart_url без паузы; сабворкфлоу RbgCMlbxJNFfyqmb (execution 2922, 14:28:02 UTC) нашёл менеджера Фрадкина (@Steven_wow), отправил в группу -1003914953850 уведомление с cart_url, ok:true. Сценарий 2 (Венгрия, дилерская страна): бот сам распознал дилерскую страну, закрыл без корзины («Заказ передан менеджеру... оформит доставку через партнёра»); сабворкфлоу (execution 2927, 14:31:19 UTC) нашёл менеджера Котенкова (@A_Kotenkov), отправил уведомление без cart_url, ok:true. В обоих случаях диалог с клиентом не подвисал (ответ 15-20 сек, как обычно)."
+  },
+  {
+    "version": "5.56",
+    "date": "2026-08-25",
+    "title": "дилеры: C-15/C-16 переписаны под реальную таблицу Андрея, C-17 поправлена (Андорра)",
+    "why": "C-15/C-16 утверждали 'каждая страна ЕС — прямая доставка, дилер только вне ЕС'; реальная таблица Андрея (Страны дилеры менеджеры.xlsx) маршрутизирует через дилера/партнёра и часть стран ЕС (Испания, Ирландия, Венгрия, Хорватия, Румыния, Португалия, Бельгия, Литва, Латвия, Эстония, Болгария, Мальта, Италия) — бот называл им прямую доставку, чего для них нет",
+    "description": "C-15 теперь даёт явный список из 17 стран прямой доставки вместо 'вся территория ЕС'; C-16 переименован в общий 'не входит в список C-15' с полным списком остальных 17 стран (включая указанные выше страны ЕС), без раскрытия имени дилера клиенту; C-17 поправлена — Андорра выделена в группу AT/Andorra €1000 вместо ошибочного попадания в 'остальные €2000'\n\nПравила: C-15, C-16, C-17",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-26 — подтверждено Артёмом вживую 2026-08-26 — дилерские страны маршрутизируются через партнёра корректно"
+  },
+  {
+    "version": "5.55",
+    "date": "2026-08-25",
+    "title": "calc_quantity: n8n node schema (jsonSchemaExample) stale — stripped frames_m/lengths_m/groups before jsCode ran",
+    "why": "Live retest of v5.54 scenario (b) found the code fix alone didn't work in production: a client giving a 60m facade run still got told the bot couldn't calculate it. Root cause was NOT calc_quantity.js (that math was already correct and verified locally) but a separate, un-tracked n8n node setting — the calc_quantity Code Tool node's jsonSchemaExample. n8n silently strips any tool-call field the model passes that isn't present in that example JSON before jsCode ever runs, even though jsCode itself handles the field fine. The old example only had areas_m2/doorways/items — frames_m, lengths_m and groups were all missing, so any call using them got silently truncated. This is the exact gotcha already documented in STATE.md Known gotchas (previously caused qty to vanish and adhesive to be undercounted 5x) — it had recurred for a second field set without being caught.",
+    "description": "Updated the calc_quantity node's jsonSchemaExample and description live via n8n MCP (update_workflow + publish_workflow), adding frames_m/lengths_m/groups examples so the model's real calls stop being stripped. deploy.py's NODE_MAP only syncs this node's jsCode, not other parameters (matches STATE.md note), so this node setting has no local tracked file — this CHANGELOG entry is its only record. No jsCode/prompt file changed.\n\nПравила: M-35",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-25 — ПРОВЕРЕНО ВЖИВУЮ 2026-08-25 — Telegram, /reset + 'Беру фасадный карниз GAUDI 4.31.301, длина фасада 60 метров. Сколько штук нужно?' -> бот вернул 'На фасад 60 метров нужно 33 штуки карниза CORNICE GAUDI 4.31.301... В расчёте уже учтён запас 10%' (60*1.1/2=33, верно) плюс клей (Монтажный G10.U.290 - 15 туб, Стыковочный G07.S.290 - 2 тубы), без отправки к менеджеру."
+  },
+  {
+    "version": "5.54",
+    "date": "2026-08-25",
+    "title": "catalog_filter: is_flexible on article lookup; calc_quantity: facade run-length input; bugs.py: read Supabase not stale Airtable",
+    "why": "Live-chat review 2026-08-25 found two real client-facing gaps. (1) telegram:6949815513: a client asked for the flexible version of arch frame 4.87.033 — the catalogue has this article twice (rigid in arch_frames, flexible in arch_flexible_elements, same article_gaudi), and catalog_filter's article-code branch never applied is_flexible, so an explicit flex request couldn't narrow the Airtable match; the bot then linked the wrong (rigid) product page. (2) Same session: the client stated a 153m facade run length directly, but calc_quantity only accepted room area (areas_m2) or an exact frame perimeter (frames_m) — no input for a plain linear run — so the bot punted a trivial division to the manager instead of answering. Separately, prompt/build/bugs.py had queried the old Airtable BUG_REPORTS table since before the 2026-08-12 Supabase migration (see memory gaudi_bug_command) and would have silently reported 'no new bugs' forever; caught during this same review, no bugs were actually missed (last Supabase bug_reports rows are already fixed/wontfix), but the tool was dead.",
+    "description": "catalog_filter.js: article-code branch now ANDs LOWER(is_flexible)='yes'/'!=yes' when the model passes is_flexible explicitly (unset flex still returns every row sharing the code, unchanged default). calc_quantity.js + M65_calc.md (M-35): new lengths_m input (top-level and per group) — exact run length in metres, summed straight into perimeter_m alongside frames_m/areas_m2, same WASTE=1.1 margin used everywhere else in the tool; M-35 gained one sentence telling the model to use it for a facade run instead of asking for wall lengths or punting to a manager. bugs.py: rewritten to query Supabase bug_reports via PostgREST (SUPABASE_SECRET_KEY) instead of Airtable; same CLI (--all/--show/--fix), ids are now bigint not recXXXX. Verified: node --check on both routing files, a standalone JS harness confirming lengths_m/groups math (153m/2m*1.1 -> 85 pieces) and that areas_m2/frames_m regressed correctly, and a live bugs.py run against Supabase (0 new, 38 total, --show renders context).\n\nПравила: M-35",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-25 — Оба сценария подтверждены вживую (Telegram, /reset): (a) 'flexible version' запрос по артикулу 4.87.033 -> одна запись, ссылка на FLEXIBLE ARCH FRAME (is_flexible=yes), не на жёсткую; (b) погонная длина фасада (60м, 4.31.301) -> бот считает штуки сам (33 шт), не отправляя к менеджеру. (b) заработало только после отдельного фикса схемы узла calc_quantity в n8n, см. v5.55."
+  },
+  {
+    "version": "5.53",
+    "date": "2026-08-21",
+    "title": "Prerouter: route 'артикул' mentions to main; C-12/M-16 reworded as positive instructions",
+    "why": "Root-caused the v5.49-v5.52 test noise: 'чем отличаются артикулы на 1 и на 6' has no full article code and no category word, so ARTICLE/CATEGORY_RU/EN regexes miss it, and Classify (nano) wasn't reliably tagging it material_question either - it fell through to light:default and the light model (gpt-5-mini, no M-16, no tools) answered from its own general knowledge instead of routing to main. Every earlier 'fix' to M-16 was therefore untested against the model that actually carries it. Separately, Artyom asked for less ban/cut-style prompt writing and more positive instruction, and for 'financial benefit' framing instead of a bare price statement.",
+    "description": "prerouter.js: new PATTERNS entry matching 'артикул'/'article' as a word, routing to main (reason ARTICLE_WORD) - deterministic, doesn't depend on Classify. C-12: reworded from a list of things to cut into a positive scoping procedure (answer the one thing asked, hold adjacent facts for their own turn), with an explicit carve-out that M-08/M-62/M-64 formatting is the answer's required shape, not padding subject to trimming. M-16: composite's plainer geometry is now framed as the client's financial upside ('the budget route to the same wall') instead of a bare 'is cheaper' statement.\n\nПравила: C-12, M-16",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Telegram живой прогон: привет->light(GREETING); покажите карнизы->main(CATEGORY_RU), полный формат вернулся (нумерация, ссылки-названия, размеры, итоговая ссылка на категорию, без 'уже отправил'); материальный вопрос ('чем отличаются артикулы на 1 и на 6')->main(prerouter:ARTICLE_WORD) даже при повторном глюке конкатенации Telegram-веб (/resetЧем отличаются...) — регекс сработал по слову 'артикул' независимо от префикса. Ответ: материал+геометрия+доступность композита как финансовая выгода, без кодов, без гибкости, без регион/цены-тангенса."
+  },
+  {
+    "version": "5.52",
+    "date": "2026-08-21",
+    "title": "C-12: hard rule to answer only the question asked; M-16 stops mandating price",
+    "why": "v5.51 fixed the flexibility leak with a literal word-ban, but the same failure mode resurfaced immediately as unrequested regional-pricing chatter ('цена зависит от региона, см. страницу товара') when the client asked only about material. Per-topic word bans in M-16 don't scale - the real gap was that C-12 (brevity) never explicitly forbade answering an adjacent, unasked question, and M-16 itself mandated a fixed material+price+geometry template regardless of what was actually asked.",
+    "description": "C-12: added a hard, explicit rule - answer only what was asked, cut any sentence that answers a different question the client didn't ask, even a well-meant reassuring aside; hold genuinely useful but unrequested facts for if the client asks. M-16: dropped the mandatory 'material + price + geometry, then STOP' template and the gибк/flex word-ban - now just says the material fact IS the answer to a prefix question, governed by C-12 like anything else, with flexibility/regional-pricing named only as illustrative examples of what C-12 already excludes.\n\nПравила: C-12, M-16",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Не проверялось отдельно — содержимое (C-12/M-16) заменено v5.53 до живого прогона; статус закрыт без теста, см. v5.53."
+  },
+  {
+    "version": "5.51",
+    "date": "2026-08-21",
+    "title": "M-16: hard-ban the words 'гибк'/'flex' unless the client used them first",
+    "why": "v5.50 deployed and was live-tested: the bot still tacked on 'гибкость не определяется первой цифрой' unprompted despite the explicit 'do NOT bring it up' instruction. Wording it as a rule to reason about wasn't enough - the rule text itself still said 'PU, rigid or flexible alike' earlier in the same paragraph, priming the model with the word right before the ban.",
+    "description": "M-16: dropped 'rigid or flexible alike' from the PU-casting sentence entirely, and replaced the ban with a literal, mechanical instruction - do not use the words 'гибк'/'flex'/is_flexible anywhere in the reply unless the client's own message already used one.\n\nПравила: M-16",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Telegram live test 2026-08-21 (fresh /reset): 'чем отличаются артикулы на 1 и на 6' now gets material+geometry only - 'полиуретан: отливают в форме, возможен сложный рельеф' vs 'композит: экструдируют, только гладкая геометрия', price deferred to the product page instead of a blanket claim. No mention of гибк/flex anywhere in the reply - the v5.50 leak (unprompted 'гибкость не определяется первой цифрой') is gone."
+  },
+  {
+    "version": "5.50",
+    "date": "2026-08-21",
+    "title": "M-16: don't volunteer the flexibility disclaimer either",
+    "why": "v5.49 live test: the bot correctly answered the 1-vs-6 material question without asking for codes, but tacked on 'гибкость не определяется первой цифрой' unprompted - nobody asked about flexibility. That's exactly the unsolicited-theory pattern C-12 already forbids (painting/solvent/material lectures); my v5.49 wording invited it by explaining the flexibility exception inside the same answer instead of just staying silent.",
+    "description": "M-16: flexibility is no longer mentioned in a material/prefix answer at all, including as a reassuring aside - only raised if the client's own message already concerns bending/flexibility, same discipline as C-12.\n\nПравила: M-16",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Не проверялось отдельно — содержимое M-16 заменено v5.51/v5.53 до живого прогона; статус закрыт без теста, см. v5.53."
+  },
+  {
+    "version": "5.49",
+    "date": "2026-08-21",
+    "title": "Article prefix = material, not flexibility; honest flexible-link wording",
+    "why": "Live test 2026-08-21 (telegram:241024423): asked a general 'what differs between 1.x and 6.x articles' question, the bot demanded two full article codes instead of answering (light branch also mis-answered instead of routing). When it did compare a pair, it framed the answer around rigid/flexible (not asked) instead of the actual differentiator; then it called a plain category link 'the flexible mouldings section', which doesn't exist as a URL filter on the site - the client caught the mismatch.",
+    "description": "M-16: article prefix (1=interior PU, 4=facade PU, 6=composite) is now an explained-unprompted signal of material, not something requiring full codes first - PU is mould-cast (any ornamental relief), composite is extruded (smooth/plain only, cheaper); flexibility stays a separate, unrelated property, never inferred from the prefix, only from is_flexible/the item's own name, and only raised if asked. M-13: documented there is no is_flexible url parameter on the site - a filtered-by-flexibility result still links to the plain category page, and the bot must say so instead of implying a dedicated flexible/rigid section. L-04: added the article-prefix-meaning case explicitly to the routing trigger list so light hands this off instead of answering it itself.\n\nПравила: M-16, M-13, L-04",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Telegram live test 2026-08-21: 'чем отличаются артикулы на 1 и на 6' (no codes given) got a direct answer - PU cast in moulds (complex relief) vs Perfom composite extruded (smooth/plain, cheaper), both interior, flexibility explicitly called out as NOT determined by the digit; no request for article codes. 'Покажите гибкие молдинги' returned 3 FLEXIBLE MOULDING items plus 'Подходит 46 вариантов гибких молдингов' phrasing with a plain link to /catalogue/interior-decor/mouldings/ - no claim of a dedicated flexible-only section."
+  },
+  {
+    "version": "5.48",
+    "date": "2026-08-21",
+    "title": "Manager pause: an exact per-message timer instead of 5-minute polling",
+    "why": "Releasing the manager pause rested on a Schedule Trigger every 5 minutes: ~8600 executions a month before a single client, and up to 5 minutes late. Checked while redesigning: human_since IS already rewritten on every manager message (the write hangs off 'Хендофф — команда /release?' out1 in parallel with the IF, not behind it), so the hour was already counted from the manager's LAST message - the only real inaccuracy was the polling lag.",
+    "description": "New branch off 'Хендофф — пауза: записать': Wait node 'Хендофф — пауза: таймер' (60 min) -> 'Хендофф — таймер: сессия' (GET the session row) -> 'Хендофф — таймер: решение' (Code). The wait lives inside the manager-message execution, so it creates no extra executions. Because every manager message starts its own timer, the decision node releases only if human_active is still true AND human_since is at least 59.5 min old - a later message makes an earlier timer exit silently and the last one does the release. It feeds the existing auto-release chain by emitting a session-shaped row into 'Хендофф — тайм-аут: список сессий', so nothing downstream had to be duplicated. Schedule Trigger dropped from every 5 minutes to every 12 hours and demoted to a safety net for waits lost to a workflow rewrite (deploy.py rewrites the workflow several times a session). Manager reminder text now says 'через час после вашего последнего сообщения' instead of 'через 60 минут', matching what actually happens.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-26 — подтверждено Артёмом вживую 2026-08-26 — таймер снятия паузы менеджера отрабатывает как задумано"
+  },
+  {
+    "version": "5.47",
+    "date": "2026-08-21",
+    "title": "Token telemetry: nightly backfill of tokens_in/tokens_out",
+    "why": "The tokens_in/tokens_out columns in messages had been empty since Phase 3. The old expressions in Лог вызова read $('OpenAI - модель').all(), which can never work - tokenUsageEstimate lives in the model node's ai_languageModel SUB-output and n8n expressions only see main outputs. Token spend was therefore invisible outside Andrei's OpenAI dashboard, and the OpenAI Usage API needs an org-owner Admin key nobody has. Found 2026-08-21 that the same figures ARE readable from the execution data over the n8n REST API.",
+    "description": "messages gained execution_id (text) and llm_calls (smallint). Лог вызова now writes String($execution.id) on both rows and no longer pretends to compute tokens. New workflow GAUDI - Token Usage (N1UQI04g8f05FZw0), daily 03:10 Europe/Moscow: pulls up to 50 bot rows with execution_id and no tokens, fetches each execution with includeData=true, sums promptTokens/completionTokens across every ai_languageModel sub-output, PATCHes the row. New credential 'n8n API (self, header)' (httpHeaderAuth, 0SJzqkr9rhTcL88B) for the self-call. Success executions are not saved (they would store a 50x execution dump every night); errors are. llm_calls matters because a turn with a tool call is TWO model calls, each re-sending the full system prompt. tokens_cached stays null - n8n's estimate never carries cached_tokens; caching itself was separately confirmed working.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Verified end to end 2026-08-21: backfilled execution_id on four historical bot rows (executions 2187/2189/2190/2191), ran the workflow on a temporary one-minute schedule, all four rows filled with figures matching a manual read of the same executions - 14446/226, 14725/236, 14722/257, and 31591/134 with llm_calls=2 for the tool-using turn. Schedule restored to daily, workflow active."
+  },
+  {
+    "version": "5.46",
+    "date": "2026-08-21",
+    "title": "Build scripts: stamp-only redeploy, and a --no-test release option",
+    "why": "Two friction points found while shipping v5.44. (1) deploy.py returned early whenever rule text matched, so after a version bump that changed no rule text the live prompt kept the old stamp forever and every later --check printed a false 'not redeployed after bump' warning. (2) release.py forced either --test or --test-todo, so a typo-level fix still queued a live test run; Artyom's call: a live check that costs more than the fix itself should not be mandatory.",
+    "description": "deploy.py: the no-drift early return now also checks stale version stamps, and redeploys stamp-only when rule text is identical. release.py: new --no-test REASON, mutually exclusive with --test/--test-todo, writing 'Тест: НЕ ТРЕБУЕТСЯ — reason' into the CHANGELOG. The prefix is deliberately different from the one state_check.py watches, so such entries never show up as a pending live-test tail. Exactly one of the three flags is still required - the point was never to allow silence about testing, only to stop forcing a run that is not worth it.",
+    "test": "НЕ ТРЕБУЕТСЯ — build scripts only, nothing is deployed to the bot by this change; both scripts exercised in this same session"
+  },
+  {
+    "version": "5.45",
+    "date": "2026-08-21",
+    "title": "search_catalog: whitelist the fields Airtable returns",
+    "why": "The Каталог — Airtable node had no fields option, so every one of the 10 pooled products reached the model with all 66 Airtable fields (~2900 chars / ~850 tokens each): 3D-model URLs, EAN, 1C code, prices, gabarits, the Russian duplicates and the v1 descriptions. Measured cost of one search_catalog call: ~8500 prompt tokens. It also kept feeding the model description_full, the field found on 2026-08-15 to contain fabricated cross-section claims - get_product_details was moved off it then, search_catalog was missed.",
+    "description": "options.fields set to the 19 fields the prompt and tools actually reference: article_gaudi, name_en, category, collection, style, material, product_url, availability_status, is_flexible, illumination, ornamentation, length_mm, width_mm, height_mm, diameter_mm, glue_mount_ml, glue_joint_ml, visual_description_v2, decorative_motifs_v2. All 19 validated against the live Airtable API before applying. Filtering is unaffected (filterByFormula runs server-side), site_product_id for the cart comes from a separate lookup in the Cart Sync sub-workflow. Measured after: 719 chars per record, ~2050 tokens per search_catalog call instead of ~8500. The bot is now fully on the v2 description fields on both tool paths.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Live Telegram dialogue 2026-08-21: category search returned cards with article, name-link and dimensions intact and the 'более 80 вариантов' cap (M-62); 'чем они отличаются' produced real v2 profile descriptions via get_product_details; the motif query 'а есть с бантиками' found 1.50.120 with bows and a laurel wreath, so decorative_motifs_v2 still drives the search. Measured cost of the search turn: 30959 prompt tokens over 2 LLM calls, against ~37k on the pre-whitelist tool output"
+  },
+  {
+    "version": "5.44",
+    "date": "2026-08-21",
+    "title": "Category links: drop the /nl/en/ locale prefix",
+    "why": "The audit item said 8 links were MISSING the /nl/en/ prefix. Checked live: both forms return 200, the site's own canonical/hreflang points at the prefix-LESS form, and Airtable product_url has no prefix either - so M-13 telling the model to 'keep /nl/en/' contradicted the only URLs it ever receives. The audit item had it backwards.",
+    "description": "Normalised every hardcoded gaudidecor.eu URL in the prompt modules to the prefix-less canonical form (C-22 service pages, M-22 facade section, M-29 collection pages, M-13/M-14 examples). M-13 wording changed from 'keep /nl/en/' to 'use it exactly as product_url gives it, with NO locale prefix'. All product/category links in the bot's replies now match the catalogue data byte-for-byte.\n\nПравила: C-22, M-13, M-14, M-22, M-29",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Live Telegram dialogue 2026-08-21: 8 product/category links in the replies, none with /nl/en/, all opening the canonical form that matches product_url"
+  },
+  {
+    "version": "5.43",
+    "date": "2026-08-19",
+    "title": "Cart Sync: remove geo-redirect workaround",
+    "why": "Dmitry fixed the .eu->.de geo-redirect on gaudidecor.eu/api/ai-cart/ server-side (2026-08-19), so the temporary manual-redirect-retry workaround in the GAUDI - Cart Sync sub-workflow (rxnbsRS1dkiUzueD) is no longer needed",
+    "description": "Removed nodes Корзина - редирект?, Корзина - нужен повтор?, Корзина - HTTP запрос (по редиректу); wired Корзина - HTTP запрос directly to Корзина - HTTP: финальный ответ (kept as a named passthrough since two downstream nodes reference it by name). Verified with a direct sub-workflow execution (temp manual-trigger test nodes, removed after): request to gaudidecor.eu returns status:success directly, no redirect, cart_url on .eu domain. Also verified cart pricing: cart page showed 53.74 EUR for cornice 1.50.125, matching the product page price exactly - the price_country=DE cookie set by the site does not affect the displayed base EUR price, so the pricing-mismatch risk flagged to Dmitry does not materialize in practice.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-19 — Live sub-workflow execution 2195: direct POST to gaudidecor.eu/api/ai-cart/ succeeded without redirect, cart_url returned on .eu domain, price cross-checked against product page (53.74 EUR both sides). Test Supabase row cleaned up."
+  },
+  {
+    "version": "5.42",
+    "date": "2026-08-19",
+    "title": "sync_cart: fix broken tool input mapping",
+    "why": "Live test showed sync_cart always received null items/lead_key/channel/external_id, then a second bug where items resolved but the tool errored",
+    "description": "Added the missing resourceMapper schema array to sync_cart's workflowInputs (toolWorkflow nodes need it for field resolution, same as search_catalog) - fixed nulls. Then found $fromAI('items', ..., 'array') uses an invalid type; n8n only accepts string/number/boolean/json for $fromAI - changed to 'json'. Both fixes applied via MCP update_workflow + publish_workflow (draft needs explicit publish, per project gotcha).",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-19 — Live Telegram test: ordered 2x cornice 1.50.125, bot asked rigid/flexible, confirmed rigid, confirmed cart build - got back real cart_url (gaudidecor.de/cart/ai_178714520576/), correct product mapped (site_product_id 4797, rigid version), Supabase site_orders upserted. Test row cleaned up after."
+  },
+  {
+    "version": "5.41",
+    "date": "2026-08-19",
+    "title": "Self-checkout cart flow (sync_cart)",
+    "why": "Developer delivered the site cart HTTP API (readme + token, 18.08) — lets the client complete checkout himself for simple ready-to-order cases instead of always routing to a manager",
+    "description": "New M-70 (M90_handoff.md): confirm-then-build-cart flow — ask before building, call sync_cart with the full confirmed item list, hand back cart_url, handle skipped/failed cases, big-project caveat to not pay before manager confirms. M-45 edited: readiness to order alone is no longer a handoff trigger by itself. M-71 (M70_tools.md): one-line tool pointer. New n8n sub-workflow GAUDI - Cart Sync (rxnbsRS1dkiUzueD): Airtable site_product_id lookup, POST to gaudidecor.eu/api/ai-cart/ with a temporary workaround for a site-side geo-redirect bug (302 .eu->.de was downgrading POST to GET, 405 - reported to developer), upsert log to Supabase site_orders (added unique constraint on lead_key). sync_cart tool wired into the main agent, lead_key/channel/external_id injected server-side, not LLM-supplied.\n\nПравила: M-45, M-70, M-71",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-19 — Live Telegram test: ordered 2x cornice 1.50.125, bot asked confirmation before building cart (M-70), confirmed, got back real cart_url and a short explanation to complete payment themselves. Full self-checkout flow works end to end."
+  },
+  {
+    "version": "5.40",
+    "date": "2026-08-17",
+    "title": "Проактивное снятие паузы менеджера через 60 мин",
+    "why": "Пауза не снималась, если клиент не писал повторно - реактивная проверка в prerouter.js срабатывала только на новом сообщении клиента",
+    "description": "Добавлена параллельная ветка в воркфлоу 0m6H2wH1NBlS9IhV: Schedule Trigger (каждые 5 мин) ищет sessions с human_active=true старше 60 мин, снимает паузу в БД, сбрасывает general-инвайт в handoff_threads и шлет менеджерам в топик ту же заметку 'Пауза истекла', что и старый реактивный путь. Не трогает файлы prompt/routing - deploy.py --check не нужен.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-21 — Live-tested by Artyom: the 60-min timer releases the manager pause on its own, without a new client message"
+  },
+  {
+    "version": "5.39",
+    "date": "2026-08-15",
+    "title": "search_catalog: мотивы, децентрализованная выборка пула, роутинг light-агента",
+    "why": "Три бага, найденные после жалобы клиента: (1) IF Ветка читала route из userText-финал, который перезаписывает json без route — маршрут всегда уходил в Агент light, даже когда Предроутер решал main. (2) Каталог — пул фильтровал/сортировал по r.article_gaudi и r['height_mm'] на верхнем уровне объекта, но Airtable v2.2 отдаёт поля вложенными в fields — search_catalog всегда отвечал total_found:0 при реальных совпадениях. (3) catalog_filter.js искал свободный текст только в name_en/article_gaudi — запросы по декоративному мотиву (\"бантики\") никогда не находили товар, хотя данные были: decorative_motifs_v2 (контролируемый словарь) и visual_description_v2 не участвовали в поиске.",
+    "description": "IF Ветка теперь читает route через $('Предроутер').first().json.route (правка узла, вне файлов). Каталог — пул читает article_gaudi/размеры через r.fields.*. catalog_filter.js: нечисловые токены search_query теперь всегда ищутся в decorative_motifs_v2 и visual_description_v2, независимо от category. Добавлено новое поле decorative_motifs_v2 в Airtable (909/909 записей залито из вижн-прохода) и M-69 в M70_tools.md — учит модель переводить мотив/стиль клиента на английский перед поиском.\n\nПравила: M-69",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-26 — подтверждено Артёмом вживую 2026-08-26 — мотив-поиск (\"бантики\") и роутинг light-агента работают корректно"
+  },
+  {
+    "version": "5.38",
+    "date": "2026-08-14",
+    "title": "search_catalog zero-result fix: filter Airtable placeholder row",
+    "why": "Previous v5.37 fix (pool_select.js returns one item on zero rows) was a no-op: n8n never even RAN 'Каталог — пул' when 'Каталог — Airtable' output zero items — confirmed via test_workflow (execution 1317 in prod still errored 'workflow did not return a response' after v5.37 was live). Root cause is n8n itself skipping a downstream node when upstream emits zero items.",
+    "description": "Enabled alwaysOutputData on node 'Каталог — Airtable' via n8n MCP (forces it to emit one empty placeholder item on zero matches, so 'Каталог — пул' always runs). Updated pool_select.js to filter out that placeholder (rows without article_gaudi) before counting, so total_found correctly reports 0 instead of counting the placeholder as a match. Verified via test_workflow against the draft before publishing.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-14 — Live test passed: search_catalog for a nonexistent article no longer errors; bot replies with the article-not-in-catalogue wording and asks for size/style, per M-68. Verified both at the tool level (test_workflow: Каталог — Airtable now emits a placeholder item, Каталог — пул filters it and reports total_found:0) and end-to-end in Telegram."
+  },
+  {
+    "version": "5.37",
+    "date": "2026-08-14",
+    "title": "search_catalog: zero-result queries broke the tool call",
+    "why": "Live-tested M-68 (article-not-found wording): search_catalog for a nonexistent article code errored with n8n's 'workflow did not return a response' instead of a clean empty result. Root cause found via execution 1313: pool_select.js (node 'Каталог — пул', last node in the search_catalog sub-workflow) returned an EMPTY items array on zero matches (rows.map() over []); the AI-tool wrapper treats zero output items as no response at all, not a valid empty answer. This breaks ANY search_catalog call with zero matches, not just article lookups by code — likely the real cause behind other 'catalogue not responding' reports too.",
+    "description": "pool_select.js: zero-match branch now returns exactly one item {total_found:0, total_capped:false} instead of an empty array, so the tool call always gets a real response and the agent can follow M-68/M-59 wording correctly instead of improvising.",
+    "test": "ПРОВЕРЕНО ВЖИВУЮ 2026-08-14 — Superseded: this pool_select.js fix alone was a no-op — n8n skips a node entirely when all its inputs are zero items, so 'Каталог — пул' never ran even after this change (confirmed via test_workflow, execution 1317 still errored in prod). Root cause and real fix landed in v5.38."
+  }
+]

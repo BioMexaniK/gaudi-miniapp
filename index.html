@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- ?v= is cache-busting. Telegram keeps the Mini App in its WebView cache. -->
-    <link rel="stylesheet" href="style.css?v=2026-09-13">
+    <link rel="stylesheet" href="style.css?v=2026-09-18">
     <title>GAUDI</title>
   </head>
   <body>
@@ -47,6 +47,10 @@
       <div class="dashboard" id="dashboard" hidden></div>
       <section class="settings-panel" id="settings-panel" hidden></section>
     </main>
-    <script src="app.js?v=2026-09-13"></script>
+    <dialog class="release-dialog" id="release-dialog">
+      <button class="dialog-close" id="release-dialog-close" type="button" aria-label="Close">&times;</button>
+      <div id="release-dialog-content"></div>
+    </dialog>
+    <script src="app.js?v=2026-09-18"></script>
   </body>
 </html>
