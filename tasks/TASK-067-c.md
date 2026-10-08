@@ -37,3 +37,21 @@ failed/skipped → concrete `blocked_by` (command + error).
 
 ---
 ## Executor report
+
+### Completed work
+- Added the manager_language select with all eight required labels, current selection, title and hint. Uses the existing settings POST and saved/error feedback; missing keys do not create a row.
+- Styled the select, bumped both asset cache keys to 2026-10-08-067-c, and added a releases.json entry using the existing fields. The miniapp-067-c identifier distinguishes this UI release from bot prompt versions.
+- Stayed on the existing branch task/067-c-settings-tab-manager-group. No push, deployment, prompt changes or production writes.
+
+### Acceptance checks
+- DONE: `node --check app.js` exited 0.
+- DONE: `node "$env:TEMP/gaudi-task-067-c-check.cjs"` exited 0. The throwaway Node VM script executes the actual settings/request functions with fake DOM elements and GET/POST responses. Checked all eight current selections/options, required title/hint, absent row when key missing, POST `{key:"manager_language",value:"de"}`, successful and failed save feedback, owner restrictions, and unchanged boolean-setting save behavior. Also parsed releases.json and checked both cache keys. Script is outside the repository.
+- DONE: `git diff main --stat` and an allowed-path assertion list only app.js, style.css, index.html, releases.json and tasks/TASK-067-c.md. `git diff --check` passed.
+- DONE: Commit subject `TASK-067-c: manager_language dropdown` on the current task branch; checked with `git log -1 --format=%s`.
+
+### Remaining human actions
+- After server-side TASK-067-b is applied and the UI is published, verify the setting in Telegram against the real API. Live testing is outside this task's local acceptance criteria.
+- Requested root STATE.md is absent (`Get-Content STATE.md`: path not found); no STATE.md exists in this checkout. AGENTS.md, README.md, task and template were read. This does not block the scoped UI task.
+
+### Blocked by
+None.

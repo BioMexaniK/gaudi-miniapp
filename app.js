@@ -196,6 +196,15 @@ async function request(path, options = {}) {
 
 function scopeLabel(scope) { const key = `scope_${scope}`; return t[key] || scope; }
 function settingInput(row, disabled) {
+  if (row.key === "manager_language") {
+    const input = document.createElement("select");
+    input.name = row.key; input.disabled = disabled;
+    [["ru", "Русский"], ["en", "English"], ["de", "Deutsch"], ["fr", "Français"], ["es", "Español"], ["it", "Italiano"], ["pl", "Polski"], ["uk", "Українська"]].forEach(([value, label]) => {
+      const option = node("option", "", label); option.value = value; input.append(option);
+    });
+    input.value = String(row.value ?? "ru");
+    return input;
+  }
   const input = document.createElement(row.value_type === "string" ? "textarea" : "input");
   input.name = row.key; input.disabled = disabled;
   if (row.value_type === "boolean") { input.type = "checkbox"; input.checked = row.value === true; }
@@ -215,8 +224,10 @@ function renderSettings() {
     if (currentRole !== "owner") section.append(node("p", "footnote", t.owner_only));
     rows.forEach((row) => {
       const field = node("label", "setting-field"); const input = settingInput(row, currentRole !== "owner");
-      field.append(node("span", "setting-title", String(row.title ?? row.key)));
-      if (row.description) field.append(node("span", "hint", String(row.description)));
+      const title = row.key === "manager_language" ? "Язык менеджерской группы" : String(row.title ?? row.key);
+      const description = row.key === "manager_language" ? "На этом языке менеджеры видят переписку; свои сообщения пишут на нём же — клиенту уйдёт перевод." : row.description;
+      field.append(node("span", "setting-title", title));
+      if (description) field.append(node("span", "hint", String(description)));
       field.append(input); section.append(field); fields.push([row, input]);
     });
     if (currentRole === "owner") {

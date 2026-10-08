@@ -1,5 +1,13 @@
 [
   {
+    "version": "miniapp-067-c",
+    "date": "2026-10-08",
+    "title": "Manager group language setting",
+    "why": "Owners need to choose the language used in the manager group",
+    "description": "Settings now renders manager_language as an eight-language dropdown with an explanation and the existing save feedback. The row is omitted until the server returns the setting. This is a mini-app release, not a bot prompt version.",
+    "test": "Local fake-response checks cover current selection, all eight options, missing-key compatibility and the existing POST payload. Live verification awaits the server-side TASK-067-b rollout."
+  },
+  {
     "version": "5.100",
     "date": "2026-09-17",
     "title": "External watchdog for Supabase",
